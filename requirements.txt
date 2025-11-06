@@ -1,6 +1,0 @@
-pandas
-matplotlib
-openpyxl
-python-dotenv
-requests
-jupyterlab
