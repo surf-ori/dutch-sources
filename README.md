@@ -1,4 +1,4 @@
-# Dutch Sources – OpenAIRE Graph Explorer
+# Dutch Sources – Overview Statistics
 
 ## TL;DR
 - Jupyter notebook that compares Dutch university activity across OpenAIRE Graph scenarios (affiliations, main CRIS, secondary repositories).
@@ -6,7 +6,7 @@
 - Outputs long and pivot CSV summaries plus visualisations to help spot coverage gaps between sources.
 
 ## Project Overview
-This repo hosts exploratory tooling for the Dutch Aurora partners to reconcile publication and project counts held in the OpenAIRE Graph.  
+This repo hosts exploratory tooling for the Dutch Research Organisations to reconcile publication and project counts held in the OpenAIRE Graph.  
 The `overview-stats.ipynb` notebook performs the following high-level steps:
 
 1. Download the latest NL organization baseline table (`nl_orgs_baseline.xlsx`) from the shared Google Sheet.
@@ -20,12 +20,12 @@ Use it to monitor how well institutional sources are represented and to identify
 ## Repository Layout
 ```
 overview-stats.ipynb   # Main analysis notebook
-requirements.txt       # Python dependencies for running the notebook
 .env.example           # Template for OpenAIRE Graph API credentials
+data/                  # Generated datasets and cached outputs (ignored by git)
 ```
 
-During execution the notebook creates:
-- `nl_orgs_baseline.xslx`: latest baseline table downloaded at run-time.
+During execution the notebook creates files inside `data/`, notably:
+- `nl_orgs_baseline.xlsx`: latest baseline table downloaded at run-time.
 - `comparison_long.csv` / `comparison_pivot.csv`: cached outputs for downstream use.
 
 ## Prerequisites
@@ -36,7 +36,7 @@ During execution the notebook creates:
 ## Getting Started
 1. **Clone & enter the repo**
    ```bash
-   git clone https://github.com/<your-org>/dutch-sources.git
+   git clone https://github.com/surf-ori/dutch-sources.git
    cd dutch-sources
    ```
 2. **Create a virtual environment (optional but recommended)**
@@ -44,24 +44,22 @@ During execution the notebook creates:
    python3 -m venv .venv
    source .venv/bin/activate
    ```
-3. **Install dependencies**
-   ```bash
-   pip install -r requirements.txt
-   ```
-4. **Configure OpenAIRE credentials**
+3. **Configure OpenAIRE credentials**
    ```bash
    cp .env.example .env
    # edit .env and insert CLIENT_ID / CLIENT_SECRET from the OpenAIRE service portal
+   # Register a Service first here. [https://develop.openaire.eu/apis]
    ```
-5. **Launch Jupyter**
+4. **Launch Jupyter**
    ```bash
    jupyter lab
    ```
-6. **Run the notebook**
+5. **Run the notebook**
    - Open `overview-stats.ipynb`.
    - Execute cells from top to bottom. The notebook will:
      - Download the latest NL baseline spreadsheet.
      - Load your credentials from `.env`.
+     - Install required Python packages via the first cell if they are missing.
      - Request an access token and query the Graph API.
      - Generate CSV outputs and visualisations.
 
@@ -76,11 +74,11 @@ The notebook expects these variables to be available (usually via `.env`):
 Keep `.env` out of version control—the default `.gitignore` already excludes it.
 
 ## Updating the Baseline Table
-`nl_orgs_baseline_url` points to the public Google Sheet export. When the workbook changes, simply re-run the notebook; the `download_nl_orgs_baseline` helper refreshes `nl_orgs_baseline.xslx` before parsing.
+`nl_orgs_baseline_url` points to the public Google Sheet export. When the workbook changes, simply re-run the notebook; the `download_nl_orgs_baseline` helper refreshes `data/nl_orgs_baseline.xlsx` before parsing.
 
 ## Outputs
-- `comparison_long.csv`: tidy format with one row per university, scenario, and metric.
-- `comparison_pivot.csv`: pivoted summary ideal for spreadsheet review.
+- `comparison_long.csv`: tidy format with one row per university, scenario, and metric (stored in `data/`).
+- `comparison_pivot.csv`: pivoted summary ideal for spreadsheet review (stored in `data/`).
 - Matplotlib chart comparing publication counts across the three scenarios.
 
 These can be reused for reporting pipelines or ingested into BI tooling.
@@ -88,7 +86,7 @@ These can be reused for reporting pipelines or ingested into BI tooling.
 ## Troubleshooting
 - **401/403 errors**: Confirm your OpenAIRE client is authorised for the Graph APIs and the `.env` values are correct.
 - **Token expiry**: The notebook caches the token and refreshes it automatically when needed. Restart the kernel if issues persist.
-- **Baseline download errors**: Ensure the Google Sheet URL remains published. If network access is blocked, download the file manually and drop it into the repo as `nl_orgs_baseline.xslx`.
+- **Baseline download errors**: Ensure the Google Sheet URL remains published. If network access is blocked, download the file manually and drop it into `data/nl_orgs_baseline.xlsx`.
 
 ## Contributing
-Feel free to open issues or pull requests with improvements, extra analyses, or automation ideas. When updating dependencies, please reflect the changes in `requirements.txt` and note any new setup steps here.
+Feel free to open issues or pull requests with improvements, extra analyses, or automation ideas. When updating dependencies, document any new setup steps here.
