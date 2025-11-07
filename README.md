@@ -88,6 +88,9 @@ All `/data` artifacts are ignored by git to prevent accidental disclosure of cre
 ### Organisations vs. their datasources
 ![Organisation vs data sources](img/org_vs_datasources.png)
 
+### Organisation vs. individual datasources
+![Organisation vs each datasource](img/org_vs_datasource_breakdown.png)
+
 ---
 
 ## Operational Notes
