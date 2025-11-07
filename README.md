@@ -1,68 +1,113 @@
-# Dutch Sources – OpenAIRE Explorer 🧭
+# Dutch Sources – CRIS and Repository Metrics Toolkit
 
-Keeping track of Dutch research activity in the OpenAIRE Graph shouldn’t feel like spelunking through JSON. This notebook-driven toolkit fetches the latest organisational baseline, authenticates with the Graph API, and keeps an auditable history of what every Dutch data source is publishing.
+This repository hosts a reproducible workflow for monitoring how Dutch research organisations and their associated data sources appear inside the [OpenAIRE Graph](https://graph.openaire.eu/). The workflow is implemented as a Jupyter notebook (`overview-stats.ipynb`) and produces both analytical datasets and visual reports suitable for stakeholders who oversee harvesting quality.
 
-## Why You’ll Like It
-- **Zero manual spreadsheets** – every run downloads the official NL baseline and normalises the identifiers for you.
-- **Authenticated Graph calls** – client-credential flow handled automatically, so you get the higher rate limits.
-- **Built-in observability** – CSV caches, Excel histories, parquet-ready tables, and a rolling `/img` gallery keep evidence handy.
-- **Progress bars everywhere** – long API loops run concurrently with clear feedback and checkpoints.
+---
 
-## Visual Tour
+## Table of Contents
+1. [Features](#features)
+2. [Repository Layout](#repository-layout)
+3. [Prerequisites](#prerequisites)
+4. [Quick Start](#quick-start)
+5. [Generated Artifacts](#generated-artifacts)
+6. [Visual Reports](#visual-reports)
+7. [Operational Notes](#operational-notes)
+8. [Troubleshooting](#troubleshooting)
+9. [Contributing](#contributing)
 
-### Organisational coverage
-![Total products per organisation](img/org_total_products.png)
+---
 
-### Data source snapshot (latest pull)
-![Latest totals per data source](img/datasource_totals_latest.png)
+## Features
+- **Automated baseline retrieval** – downloads the latest NL organisational spreadsheet directly from Google Sheets and normalises identifiers (ROR, OpenAIRE, CRIS, repository).
+- **Authenticated API access** – uses the OpenAIRE client-credentials grant to take advantage of higher rate limits.
+- **Concurrent harvesting** – leverages thread pools and progress bars for ID enrichment, scenario metrics, and datasource snapshots.
+- **Historical tracking** – appends every datasource “numFound” snapshot to an Excel history file, enabling longitudinal analysis.
+- **Ready-to-share graphics** – saves publication and datasource coverage charts into `img/` for re-use in presentations or dashboards.
 
-### Latest vs. previous snapshot
-![Latest vs previous totals per data source](img/datasource_totals_compare.png)
-
-> The comparison chart becomes meaningful once you’ve captured at least two `date_retrieved` snapshots. Until then you’ll see a friendly reminder image.
-
-## How the Notebook Flows
-1. **Baseline download** – grabs the published Google Sheet (`nl_orgs_baseline.xlsx`) and keeps the sheet/tab names in sync.
-2. **Identifier wrangling** – enriches the baseline with OpenAIRE IDs by resolving ROR links and caching access tokens.
-3. **Metric collection** – runs per-organisation scenarios (affiliation vs. CRIS vs. repository) via authenticated Graph calls.
-4. **Data source inventory** – fetches every datasource tied to the organisations, along with compatibility metadata.
-5. **NumFound snapshots** – records total and per-product counts for each datasource and writes both dated Excel dumps and a cumulative history workbook.
-6. **Visualisation & exports** – saves ready-to-share PNGs in `img/` and Excel/CSV/Parquet artifacts in `data/`.
+---
 
 ## Repository Layout
 ```
-overview-stats.ipynb   # Main analysis & visualisation notebook
-.env.example           # Template for CLIENT_ID / CLIENT_SECRET
-data/                  # Generated CSV/Excel artifacts and history logs
-img/                   # Auto-saved charts (safe to embed anywhere)
-agents.md              # Notes on the automation helpers inside the notebook
+overview-stats.ipynb   # Main notebook with numbered sections (baseline → metrics → visualisations)
+.env.example           # Template for CLIENT_ID and CLIENT_SECRET
+data/                  # Auto-generated CSV/Excel outputs (ignored by git)
+img/                   # Auto-generated PNG charts (checked in for documentation)
+agents.md              # Notes describing each automation “agent” inside the notebook
 ```
 
-## Getting Started
+---
+
+## Prerequisites
+- Python 3.10+
+- OpenAIRE AAI client credentials with access to the Graph APIs [https://develop.openaire.eu/apis]
+- Ability to open the published Google Sheet referenced in the notebook [nl-orgs-baseline](https://docs.google.com/spreadsheets/d/1s2eeEBGR9ovKkFZMvqNQHPXqLQB_GH55/edit?usp=sharing&ouid=117254663676107205045&rtpof=true&sd=true)
+- JupyterLab (or another Jupyter interface)
+
+---
+
+## Quick Start
 ```bash
 git clone https://github.com/surf-ori/dutch-sources.git
 cd dutch-sources
 python3 -m venv .venv && source .venv/bin/activate
-cp .env.example .env  # fill in CLIENT_ID / CLIENT_SECRET from OpenAIRE AAI
+cp .env.example .env   # fill in CLIENT_ID and CLIENT_SECRET
 jupyter lab
 ```
-Run `overview-stats.ipynb` top-to-bottom. The first cell installs any missing packages (including `tqdm` and `pyarrow`), and the rest of the notebook assumes the `.env` file is present.
+Open `overview-stats.ipynb` and execute the cells in order. The first cell installs any missing Python packages (`pandas`, `matplotlib`, `openpyxl`, `requests`, `python-dotenv`, `tqdm`, `pyarrow`). Each numbered section in the notebook is self-contained and can be re-run independently when you only need part of the pipeline.
 
-## Key Outputs
-| Artifact | Path | What it’s for |
+---
+
+## Generated Artifacts
+| Artifact | Location | Purpose |
 | --- | --- | --- |
-| `nl_orgs_baseline.xlsx` | `data/` | the baseline data with all Dutch Research Performing Organisations |
-| `nl_orgs_openaire.xlsx` | `data/` | Enriched organisational baseline with OpenAIRE IDs + metrics. |
-| `nl_orgs_openaire_datasources.xlsx` | `data/` | All datasources per organisation, including compatibility info. |
-| `nl_orgs_openaire_datasources_numFound_YYYY-MM-DD.xlsx` | `data/` | Snapshot of per-datasource totals for that run. |
-| `nl_orgs_openaire_datasources_numFound_history.xlsx` | `data/` | Cumulative timeseries (appended every run). |
-| `img/*.png` | `img/` | Auto-exported charts for slide decks / reports. |
+| `nl_orgs_baseline.xlsx` | `data/` | Latest NL baseline sheet downloaded from Google Sheets. |
+| `nl_orgs_openaire.xlsx` | `data/` | Baseline enriched with OpenAIRE IDs and per-organisation metrics. |
+| `nl_orgs_openaire_datasources.xlsx` | `data/` | Registry metadata for every datasource linked to the organisations. |
+| `nl_orgs_openaire_datasources_numFound_<date>.xlsx` | `data/` | Daily snapshot of total and per-type counts per datasource. |
+| `nl_orgs_openaire_datasources_numFound_history.xlsx` | `data/` | Rolling history of snapshots (appended each run). |
+| `comparison_long.csv` / `comparison_pivot.csv` | `data/` | Scenario metrics (affiliation vs. CRIS vs. repository) per organisation. |
+| `img/*.png` | `img/` | PNG charts exported by the notebook (see below). |
 
-## Tips & Troubleshooting
-- **Need a re-run?** Delete `data/nl_orgs_openaire.xlsx` (or the history workbook) and rerun the targeted steps – the notebook is idempotent.
-- **API hiccups?** The progress bars surface failures; simply rerun the cell and the cached access token will be refreshed if necessary.
-- **Updating credentials?** Rotate the values in `.env`, restart the kernel, and re-run from the setup cell.
-- **Want notebook-free automation?** See `agents.md` for guidance on scripting the enrichment and snapshot steps.
+All `/data` artifacts are ignored by git to prevent accidental disclosure of credential-derived outputs. The `/img` directory is committed so documentation can embed the latest charts.
 
-## Share the Love
-Issues, ideas, or data quirks? Open a GitHub issue or drop a PR. The more metadata we validate, the easier it becomes to spot stagnant datasources before a harvesting outage hits.
+---
+
+## Visual Reports
+
+### Organisational coverage
+![Total products per organisation](img/org_total_products.png)
+
+### Datasource snapshot (latest)
+![Latest datasource totals](img/datasource_totals_latest.png)
+
+### Datasource growth check (latest vs previous)
+![Latest vs previous datasource totals](img/datasource_totals_compare.png)
+
+> The comparison chart becomes meaningful once at least two snapshots have been captured. Until then the notebook logs a notice and the placeholder image remains unchanged.
+
+---
+
+## Operational Notes
+- **Agents**: Each section of the notebook acts like an “agent” (baseline scout, metrics harvester, datasource cartographer, snapshot scribe, viz painter). See `agents.md` for guidance on invoking just the portion you need.
+- **Zero-product datasources**: Visual sections list any datasources reporting zero total research products and exclude them from the charts. Use those console messages to notify repository managers of harvesting gaps.
+- **Checkpointing**: Long-running enrichment steps write temporary Excel files (e.g., `nl_orgs_openaire.tmp.xlsx`) every few organisations so work can resume if the notebook is interrupted.
+
+---
+
+## Troubleshooting
+| Issue | Remedy |
+| --- | --- |
+| Missing OpenAIRE credentials | Confirm `.env` is populated and the environment is reloaded before running the notebook. get the credentaisl here [https://develop.openaire.eu/apis] |
+| API rate limits | The notebook already authenticates, but if you hit limits reduce the max workers in multithreaded sections or rerun later. |
+| History workbook missing | Step 9 creates `nl_orgs_openaire_datasources_numFound_history.xlsx`. If deleted, the next snapshot run recreates it automatically. |
+| Comparison chart blank | You must have at least two distinct `date_retrieved` values in the history workbook to generate the side-by-side bars. |
+
+---
+
+## Contributing
+Pull requests are welcome. Please:
+1. Run the notebook sections relevant to your change so regenerated artifacts stay in sync.
+2. Update `agents.md` or this README if you add or rename outputs.
+3. Keep sensitive data (credentials, raw tokens, etc.) out of version control—`.gitignore` already excludes `.env` and everything under `/data`.
+
+Questions or suggestions? Open an issue on GitHub and describe which section (agent) of the notebook you are targeting. That keeps discussions well scoped and easier to reproduce.
