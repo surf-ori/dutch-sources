@@ -83,7 +83,10 @@ All `/data` artifacts are ignored by git to prevent accidental disclosure of cre
 ### Datasource growth check (latest vs previous)
 ![Latest vs previous datasource totals](img/datasource_totals_compare.png)
 
-> The comparison chart becomes meaningful once at least two snapshots have been captured. Until then the notebook logs a notice and the placeholder image remains unchanged.
+> This comparison becomes meaningful once at least two snapshots exist in the history workbook.
+
+### Organisations vs. their datasources
+![Organisation vs data sources](img/org_vs_datasources.png)
 
 ---
 
