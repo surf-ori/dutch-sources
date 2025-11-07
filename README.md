@@ -92,6 +92,10 @@ All `/data` artifacts are ignored by git to prevent accidental disclosure of cre
 ### Organisation vs. individual datasources
 ![Organisation vs each datasource](img/org_vs_datasource_breakdown.png)
 
+### OAI endpoint diagnostics
+![Endpoint coverage summary](img/oai_endpoint_summary.png)
+![OpenAIRE compatibility by type](img/oai_openaire_compatibility_by_type.png)
+
 ---
 
 ## Operational Notes
