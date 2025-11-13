@@ -96,6 +96,9 @@ All `/data` artifacts are ignored by git to prevent accidental disclosure of cre
 ![Endpoint coverage summary](img/oai_endpoint_summary.png)
 ![OpenAIRE compatibility by type](img/oai_openaire_compatibility_by_type.png)
 
+### Interactive datasource dashboard
+Open the notebook’s Step 18 cell to explore an ipywidgets/Plotly dashboard where universities can filter on their organisation and inspect datasource health, metadata compliance, and the latest volume snapshot (tables update alongside the charts for transparency).
+
 ---
 
 ## Operational Notes
