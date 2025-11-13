@@ -12,6 +12,7 @@ The notebook is structured like a small team of agents so each responsibility is
 | **Endpoint Backfiller** | 15 | Uses the curated endpoint list to inject `OAI-endpoint` values back into the datasource export. | `data/nl_orgs_openaire_datasources_with_endpoint.xlsx`. |
 | **Endpoint Auditor** | 16 | Probes each endpoint with `ListMetadataFormats` to record actual metadata support and OAI health. | `data/nl_orgs_openaire_datasources_with_endpoint_metrics.xlsx`. |
 | **Viz Painter** | 17 | Builds the endpoint diagnostics summary table + two PNG charts for documentation. | `img/oai_endpoint_summary.png`, `img/oai_openaire_compatibility_by_type.png`. |
+| **Dashboard Guide** | 18 | Loads org, history, and endpoint metrics into an interactive Plotly/widget dashboard for stakeholder self-service. | live widget output in `overview-stats.ipynb`. |
 
 ## When to Run What
 - **Daily/Weekly checks**: Run the Snapshot Scribe and Viz Painter cells to refresh the history workbook and PNGs.
