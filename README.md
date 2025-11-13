@@ -23,6 +23,7 @@ This repository hosts a reproducible workflow for monitoring how Dutch research 
 - **Concurrent harvesting** – leverages thread pools and progress bars for ID enrichment, scenario metrics, and datasource snapshots.
 - **Historical tracking** – appends every datasource “numFound” snapshot to an Excel history file, enabling longitudinal analysis.
 - **Ready-to-share graphics** – saves publication and datasource coverage charts into `img/` for re-use in presentations or dashboards.
+- **Responsive dashboard explorer** – interactive Plotly widgets now support multi-select filters, numeric range sliders, quick “error focus” presets, and a responsive chart grid that adapts to wide screens.
 
 ---
 
@@ -97,13 +98,14 @@ All `/data` artifacts are ignored by git to prevent accidental disclosure of cre
 ![OpenAIRE compatibility by type](img/oai_openaire_compatibility_by_type.png)
 
 ### Interactive datasource dashboard
-Open the notebook’s Step 18 cell to explore an ipywidgets/Plotly dashboard where universities can filter on their organisation and inspect datasource health, metadata compliance, and the latest volume snapshot (tables update alongside the charts for transparency).
+Open the notebook’s Step 18 cell to explore an ipywidgets/Plotly dashboard where universities can filter on their organisation and inspect datasource health, metadata compliance, and the latest volume snapshot (tables update alongside the charts for transparency). All selectors now support multi-select, there are range sliders for “research products by organisation/datasource”, and quick presets highlight common error scenarios (zero-product compatible sources, CRIS mismatch). Charts are displayed in a responsive grid that expands to double-width when screen real-estate is available.
 
 ---
 
 ## Operational Notes
 - **Agents**: Each section of the notebook acts like an “agent” (baseline scout, metrics harvester, datasource cartographer, snapshot scribe, viz painter). See `agents.md` for guidance on invoking just the portion you need.
-- **Zero-product datasources**: Visual sections list any datasources reporting zero total research products and exclude them from the charts. Use those console messages to notify repository managers of harvesting gaps.
+- **Dashboard shortcuts**: Use the “Quick focus” presets in the widget header to immediately highlight zero-product OpenAIRE-compatible datasources or CRIS compatibility mismatches without manually adjusting every filter.
+- **Zero-product datasources**: Visual sections list any datasources reporting zero total research products and exclude them from the charts. Use those console messages (or the dashboard preset) to notify repository managers of harvesting gaps.
 - **Checkpointing**: Long-running enrichment steps write temporary Excel files (e.g., `nl_orgs_openaire.tmp.xlsx`) every few organisations so work can resume if the notebook is interrupted.
 
 ---
