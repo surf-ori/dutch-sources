@@ -60,13 +60,13 @@ Open `overview-stats.ipynb` and execute the cells in order. The first cell insta
 ## Generated Artifacts
 | Artifact | Location | Purpose |
 | --- | --- | --- |
-| `nl_orgs_baseline.xlsx` | `data/` | Latest NL baseline sheet downloaded from Google Sheets. |
+| `nl_orgs_baseline.xlsx` | `data/` | Latest curated NL baseline sheet downloaded from Google Sheets. |
 | `nl_orgs_openaire.xlsx` | `data/` | Baseline enriched with OpenAIRE IDs and per-organisation metrics. |
 | `nl_orgs_openaire_datasources.xlsx` | `data/` | Registry metadata for every datasource linked to the organisations. |
 | `nl_orgs_openaire_datasources_numFound_<date>.xlsx` | `data/` | Daily snapshot of total and per-type counts per datasource. |
 | `nl_orgs_openaire_datasources_numFound_history.xlsx` | `data/` | Rolling history of snapshots (appended each run). |
 | `comparison_long.csv` / `comparison_pivot.csv` | `data/` | Scenario metrics (affiliation vs. CRIS vs. repository) per organisation. |
-| `overzicht_repositories_with_datasource.xlsx` | `data/` | Repository workbook enriched with `OpenAIRE_DataSource_ID` values per row. |
+| `curated_oai_endpoints.xlsx` | `data/` | Curated OAI endpoint list retrieved from the shared Google Sheet. |
 | `img/*.png` | `img/` | PNG charts exported by the notebook (see below). |
 
 All `/data` artifacts are ignored by git to prevent accidental disclosure of credential-derived outputs. The `/img` directory is committed so documentation can embed the latest charts.
