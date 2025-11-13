@@ -8,8 +8,8 @@ The notebook is structured like a small team of agents so each responsibility is
 | **Metrics Harvester** | 10–14 | Runs sample sanity checks, enriches all orgs, and keeps `enriched_df` + PNG visualisations up-to-date. | `data/nl_orgs_openaire.xlsx`, `img/org_total_products.png`. |
 | **Datasource Cartographer** | 16 | Pulls every datasource linked to the orgs (including compatibility labels). | `data/nl_orgs_openaire_datasources.xlsx`. |
 | **Snapshot Scribe** | 18–20 | Captures per-datasource `numFound` totals, writes dated Excel snapshots, and appends them to the rolling history workbook. | `data/nl_orgs_openaire_datasources_numFound_YYYY-MM-DD.xlsx`, `data/nl_orgs_openaire_datasources_numFound_history.xlsx`. |
-| **Repository Aligner** | 14 | Crosswalks the Google Sheet repository overview against datasource domains to ensure every row carries an `OpenAIRE_DataSource_ID`. | `data/overzicht_repositories_with_datasource.xlsx`. |
-| **Endpoint Backfiller** | 15 | Uses the aligned repository workbook to inject missing `OAI-endpoint` values back into the datasource export. | `data/nl_orgs_openaire_datasources_with_endpoint.xlsx`. |
+| **Endpoint Collector** | 14 | Downloads the curated OAI-PMH spreadsheet so the latest endpoints are on disk. | `data/curated_oai_endpoints.xlsx`. |
+| **Endpoint Backfiller** | 15 | Uses the curated endpoint list to inject `OAI-endpoint` values back into the datasource export. | `data/nl_orgs_openaire_datasources_with_endpoint.xlsx`. |
 | **Endpoint Auditor** | 16 | Probes each endpoint with `ListMetadataFormats` to record actual metadata support and OAI health. | `data/nl_orgs_openaire_datasources_with_endpoint_metrics.xlsx`. |
 | **Viz Painter** | 17 | Builds the endpoint diagnostics summary table + two PNG charts for documentation. | `img/oai_endpoint_summary.png`, `img/oai_openaire_compatibility_by_type.png`. |
 
