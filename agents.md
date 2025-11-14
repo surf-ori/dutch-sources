@@ -12,11 +12,11 @@ The notebook is structured like a small team of agents so each responsibility is
 | **Endpoint Backfiller** | 15 | Uses the curated endpoint list to inject `OAI-endpoint` values back into the datasource export. | `data/nl_orgs_openaire_datasources_with_endpoint.xlsx`. |
 | **Endpoint Auditor** | 16 | Probes each endpoint with `ListMetadataFormats` to record actual metadata support and OAI health. | `data/nl_orgs_openaire_datasources_with_endpoint_metrics.xlsx`. |
 | **Viz Painter** | 17 | Builds the endpoint diagnostics summary table + two PNG charts for documentation. | `img/oai_endpoint_summary.png`, `img/oai_openaire_compatibility_by_type.png`. |
-| **Dashboard Guide** | 18 | Loads org, history, and endpoint metrics into an interactive Plotly/widget dashboard with multi-select filters, volume sliders, quick-focus presets, and a responsive chart grid for stakeholder self-service. | live widget output in `overview-stats.ipynb`. |
+| **Dashboard Exporter** | 15 | Produces the combined organisation/datasource dataframe and writes `data/nl_orgs_dashboard_data.xlsx` for downstream apps. | `data/nl_orgs_dashboard_data.xlsx`. |
 
 ## When to Run What
-- **Daily/Weekly checks**: Run the Snapshot Scribe and Viz Painter cells to refresh the history workbook and PNGs.
-- **After baseline changes**: Start from the Baseline Scout, then re-run the Harvester, Cartographer, and Scribe to keep downstream artifacts consistent.
-- **Headless automation**: The logic inside each “agent” cell block is copy/paste ready for a CLI script—just make sure `.env` is loaded and `/data` + `/img` exist.
+- **Daily/Weekly checks**: Run the Snapshot Scribe, Dashboard Exporter, and Viz Painter cells to refresh the history workbook, Streamlit data file, and PNGs.
+- **After baseline changes**: Start from the Baseline Scout, then re-run the Harvester, Cartographer, Scribe, and Dashboard Exporter to keep downstream artifacts consistent.
+- **Headless automation**: The logic inside each “agent” cell block is copy/paste ready for a CLI script—just make sure `.env` is loaded and `/data` + `/img` exist. The Streamlit app (`streamlit_app.py`) simply reads `data/nl_orgs_dashboard_data.xlsx`, so any automation must regenerate that file before redeploying the UI.
 
 Keeping the responsibilities split like this makes it easy to rerun the minimal amount of work (and shortens re-review cycles when OpenAIRE tweaks the API schemas).

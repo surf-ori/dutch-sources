@@ -23,7 +23,7 @@ This repository hosts a reproducible workflow for monitoring how Dutch research 
 - **Concurrent harvesting** – leverages thread pools and progress bars for ID enrichment, scenario metrics, and datasource snapshots.
 - **Historical tracking** – appends every datasource “numFound” snapshot to an Excel history file, enabling longitudinal analysis.
 - **Ready-to-share graphics** – saves publication and datasource coverage charts into `img/` for re-use in presentations or dashboards.
-- **Responsive dashboard explorer** – interactive Plotly widgets now support multi-select filters, numeric range sliders, quick “error focus” presets, and a responsive chart grid that adapts to wide screens.
+- **Streamlit dashboard explorer** – a dedicated `streamlit_app.py` provides multi-select filters, numeric range sliders, quick “error focus” presets, and a responsive chart grid sourced from the exported dashboard dataset.
 
 ---
 
@@ -40,6 +40,7 @@ agents.md              # Notes describing each automation “agent” inside the
 
 ## Prerequisites
 - Python 3.10+
+- Streamlit 1.30+ (for the standalone dashboard)
 - OpenAIRE AAI client credentials with access to the Graph APIs [https://develop.openaire.eu/apis]
 - Ability to open the published Google Sheet referenced in the notebook [nl-orgs-baseline](https://docs.google.com/spreadsheets/d/1s2eeEBGR9ovKkFZMvqNQHPXqLQB_GH55/edit?usp=sharing&ouid=117254663676107205045&rtpof=true&sd=true)
 - JupyterLab (or another Jupyter interface)
@@ -54,7 +55,13 @@ python3 -m venv .venv && source .venv/bin/activate
 cp .env.example .env   # fill in CLIENT_ID and CLIENT_SECRET
 jupyter lab
 ```
-Open `overview-stats.ipynb` and execute the cells in order. The first cell installs any missing Python packages (`pandas`, `matplotlib`, `openpyxl`, `requests`, `python-dotenv`, `tqdm`, `pyarrow`). Each numbered section in the notebook is self-contained and can be re-run independently when you only need part of the pipeline.
+Open `overview-stats.ipynb` and execute the cells in order. The first cell installs any missing Python packages (`pandas`, `matplotlib`, `openpyxl`, `requests`, `python-dotenv`, `tqdm`, `pyarrow`). Each numbered section in the notebook is self-contained and can be re-run independently when you only need part of the pipeline. After running the dashboard export cell (Step 15), start the web dashboard with:
+
+```bash
+streamlit run streamlit_app.py
+```
+
+The Streamlit app reads `data/nl_orgs_dashboard_data.xlsx`, so rerun the notebook cell whenever fresh snapshots are captured.
 
 ---
 
@@ -66,6 +73,7 @@ Open `overview-stats.ipynb` and execute the cells in order. The first cell insta
 | `nl_orgs_openaire_datasources.xlsx` | `data/` | Registry metadata for every datasource linked to the organisations. |
 | `nl_orgs_openaire_datasources_numFound_<date>.xlsx` | `data/` | Daily snapshot of total and per-type counts per datasource. |
 | `nl_orgs_openaire_datasources_numFound_history.xlsx` | `data/` | Rolling history of snapshots (appended each run). |
+| `nl_orgs_dashboard_data.xlsx` | `data/` | Joined dataset consumed by the Streamlit dashboard (`streamlit_app.py`). |
 | `comparison_long.csv` / `comparison_pivot.csv` | `data/` | Scenario metrics (affiliation vs. CRIS vs. repository) per organisation. |
 | `curated_oai_endpoints.xlsx` | `data/` | Curated OAI endpoint list retrieved from the shared Google Sheet. |
 | `img/*.png` | `img/` | PNG charts exported by the notebook (see below). |
@@ -97,14 +105,14 @@ All `/data` artifacts are ignored by git to prevent accidental disclosure of cre
 ![Endpoint coverage summary](img/oai_endpoint_summary.png)
 ![OpenAIRE compatibility by type](img/oai_openaire_compatibility_by_type.png)
 
-### Interactive datasource dashboard
-Open the notebook’s Step 18 cell to explore an ipywidgets/Plotly dashboard where universities can filter on their organisation and inspect datasource health, metadata compliance, and the latest volume snapshot (tables update alongside the charts for transparency). All selectors now support multi-select, there are range sliders for “research products by organisation/datasource”, and quick presets highlight common error scenarios (zero-product compatible sources, CRIS mismatch). Charts are displayed in a responsive grid that expands to double-width when screen real-estate is available.
+### Interactive datasource dashboard (Streamlit)
+Run `streamlit run streamlit_app.py` after exporting `data/nl_orgs_dashboard_data.xlsx` to explore the full dashboard outside Jupyter. The app mirrors all notebook-era controls—multi-select filters, range sliders for organisation/datasource totals, “quick focus” presets for common error scenarios, responsive Plotly charts, and a sortable HTML table with OpenAIRE/OAI hyperlinks.
 
 ---
 
 ## Operational Notes
-- **Agents**: Each section of the notebook acts like an “agent” (baseline scout, metrics harvester, datasource cartographer, snapshot scribe, viz painter). See `agents.md` for guidance on invoking just the portion you need.
-- **Dashboard shortcuts**: Use the “Quick focus” presets in the widget header to immediately highlight zero-product OpenAIRE-compatible datasources or CRIS compatibility mismatches without manually adjusting every filter.
+- **Agents**: Each section of the notebook acts like an “agent” (baseline scout, metrics harvester, datasource cartographer, snapshot scribe, viz painter). See `agents.md` for guidance on invoking just the portion you need—including the dashboard export agent that feeds the Streamlit UI.
+- **Dashboard shortcuts**: The Streamlit app includes “Quick focus” presets in the sidebar to immediately highlight zero-product OpenAIRE-compatible datasources or CRIS compatibility mismatches without manually adjusting every filter.
 - **Zero-product datasources**: Visual sections list any datasources reporting zero total research products and exclude them from the charts. Use those console messages (or the dashboard preset) to notify repository managers of harvesting gaps.
 - **Checkpointing**: Long-running enrichment steps write temporary Excel files (e.g., `nl_orgs_openaire.tmp.xlsx`) every few organisations so work can resume if the notebook is interrupted.
 
