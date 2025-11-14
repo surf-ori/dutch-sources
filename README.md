@@ -4,6 +4,11 @@ This repository hosts a reproducible workflow for monitoring how Dutch research 
 
 ---
 
+## Dutch Sources Dashboard - Screenshot
+![Dutch Sources Dashboard - Screenshot](./img/ScreenshotDashboard.png)
+
+---
+
 ## Table of Contents
 
 1. [Features](#features)
