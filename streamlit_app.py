@@ -135,7 +135,7 @@ def render_metrics(df: pd.DataFrame) -> None:
     org_count = df["OpenAIRE_ORG_ID"].nunique(dropna=True)
     datasource_count = df["OpenAIRE_DataSource_ID"].nunique(dropna=True)
     compat_count = (
-        df.loc[df["OpenAIRE Compatibility"].str.lower().ne("not specified"), "OpenAIRE_DataSource_ID"]
+        df.loc[df["OpenAIRE Compatibility"].str.lower().ne("not yet registered"), "OpenAIRE_DataSource_ID"]
         .nunique(dropna=True)
     )
     active_endpoints = (
