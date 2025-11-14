@@ -5,6 +5,7 @@ This repository hosts a reproducible workflow for monitoring how Dutch research 
 ---
 
 ## Dutch Sources Dashboard - Screenshot
+
 ![Dutch Sources Dashboard - Screenshot](./img/ScreenshotDashboard.png)
 
 ---
@@ -39,8 +40,9 @@ This repository hosts a reproducible workflow for monitoring how Dutch research 
 ```code
 overview-stats.ipynb   # Main notebook with numbered sections (baseline → metrics → visualisations)
 .env.example           # Template for CLIENT_ID and CLIENT_SECRET
+streamlit_app.py       # Streamlit dashboard consuming the exported dashboard dataset
 data/                  # Auto-generated CSV/Excel outputs (ignored by git)
-img/                   # Auto-generated PNG charts (checked in for documentation)
+img/                   # PNG charts + favicon (checked in for documentation and the dashboard UI)
 agents.md              # Notes describing each automation “agent” inside the notebook
 ```
 
@@ -86,9 +88,9 @@ The Streamlit app reads `data/nl_orgs_dashboard_data.xlsx`, so rerun the noteboo
 | `nl_orgs_openaire_datasources_numFound_<date>.xlsx` | `data/` | Daily snapshot of total and per-type counts per datasource. |
 | `nl_orgs_openaire_datasources_numFound_history.xlsx` | `data/` | Rolling history of snapshots (appended each run). |
 | `nl_orgs_dashboard_data.xlsx` | `data/` | Joined dataset consumed by the Streamlit dashboard (`streamlit_app.py`). |
-| `comparison_long.csv` / `comparison_pivot.csv` | `data/` | Scenario metrics (affiliation vs. CRIS vs. repository) per organisation. |
 | `curated_oai_endpoints.xlsx` | `data/` | Curated OAI endpoint list retrieved from the shared Google Sheet. |
 | `img/*.png` | `img/` | PNG charts exported by the notebook (see below). |
+| `img/favicon.ico` | `img/` | Custom favicon displayed by `streamlit_app.py`. |
 
 All `/data` artifacts are ignored by git to prevent accidental disclosure of credential-derived outputs. The `/img` directory is committed so documentation can embed the latest charts.
 
