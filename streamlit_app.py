@@ -108,7 +108,10 @@ def apply_filters(
         statuses_lower = {value.lower() for value in statuses}
         filtered = filtered[filtered["oai_status"].str.lower().isin(statuses_lower)]
     if datasources:
-        filtered = filtered[filtered["OpenAIRE_DataSource_ID"].isin(datasources)]
+        datasource_ids = {str(value) for value in datasources}
+        filtered = filtered[
+            filtered["OpenAIRE_DataSource_ID"].astype(str).isin(datasource_ids)
+        ]
 
     org_min, org_max = org_range
     filtered = filtered[
@@ -370,13 +373,23 @@ def main() -> None:
     type_options = sorted(dashboard_df["Type"].dropna().unique().tolist())
     support_options = list(SUPPORT_MAPPING.keys())
     status_options = sorted(dashboard_df["oai_status"].dropna().unique().tolist())
-    datasource_options = sorted(
-        dashboard_df["OpenAIRE_DataSource_ID"].dropna().astype(str).unique().tolist()
+    datasource_records = (
+        dashboard_df[["OpenAIRE_DataSource_ID", "Datasource Name"]]
+        .dropna(subset=["OpenAIRE_DataSource_ID"])
+        .drop_duplicates(subset=["OpenAIRE_DataSource_ID"])
+        .assign(OpenAIRE_DataSource_ID=lambda frame: frame["OpenAIRE_DataSource_ID"].astype(str))
+        .sort_values("Datasource Name")
+    )
+    datasource_options = datasource_records["OpenAIRE_DataSource_ID"].tolist()
+    datasource_labels = dict(
+        zip(datasource_records["OpenAIRE_DataSource_ID"], datasource_records["Datasource Name"])
     )
 
     selected_orgs = st.sidebar.multiselect("Organisations", org_options)
     selected_datasources = st.sidebar.multiselect(
-        "Datasources (filtered after other selections)", datasource_options
+        "Datasources (filtered after other selections)",
+        datasource_options,
+        format_func=lambda value: datasource_labels.get(value, value),
     )
     selected_compat = st.sidebar.multiselect("OpenAIRE compatibility", compat_options)
     selected_types = st.sidebar.multiselect("Datasource types", type_options)
