@@ -152,10 +152,10 @@ def render_metrics(df: pd.DataFrame) -> None:
         ("Dutch data sources", format_number(datasource_count)),
         ("OpenAIRE compatible data sources", format_number(compat_count)),
         ("Active OAI endpoints", format_number(active_endpoints)),
-        ("NL DIDL supported", format_number(support_totals.get("NL DIDL", 0))),
-        ("OpenAIRE CERIF supported", format_number(support_totals.get("OpenAIRE CERIF", 0))),
-        ("OpenAIRE literature supported", format_number(support_totals.get("OpenAIRE Literature", 0))),
-        ("OpenAIRE data supported", format_number(support_totals.get("OpenAIRE Data", 0))),
+        ("Endpoint supports NL DIDL/MODS", format_number(support_totals.get("NL DIDL", 0))),
+        ("Endpoint supports OpenAIRE CERIF", format_number(support_totals.get("OpenAIRE CERIF", 0))),
+        ("Endpoint supports OpenAIRE Literature", format_number(support_totals.get("OpenAIRE Literature", 0))),
+        ("Endpoint supports OpenAIRE Data", format_number(support_totals.get("OpenAIRE Data", 0))),
         ("Latest snapshot date", date_label),
     ]
 
@@ -339,10 +339,6 @@ def render_table(df: pd.DataFrame) -> None:
         "oai_status",
         "metadata_prefixes_detected",
         "Total Research Products",
-        "Publications",
-        "Research data",
-        "Research software",
-        "Other research products",
     ]
     display_df = df.sort_values(["Organisation Name", "Datasource Name"]).copy()
     display_df["Organisation Name"] = display_df.apply(make_org_link, axis=1)
