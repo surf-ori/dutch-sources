@@ -5,6 +5,7 @@ This repository hosts a reproducible workflow for monitoring how Dutch research 
 ---
 
 ## Table of Contents
+
 1. [Features](#features)
 2. [Repository Layout](#repository-layout)
 3. [Prerequisites](#prerequisites)
@@ -18,6 +19,7 @@ This repository hosts a reproducible workflow for monitoring how Dutch research 
 ---
 
 ## Features
+
 - **Automated baseline retrieval** – downloads the latest NL organisational spreadsheet directly from Google Sheets and normalises identifiers (ROR, OpenAIRE, CRIS, repository).
 - **Authenticated API access** – uses the OpenAIRE client-credentials grant to take advantage of higher rate limits.
 - **Concurrent harvesting** – leverages thread pools and progress bars for ID enrichment, scenario metrics, and datasource snapshots.
@@ -28,7 +30,8 @@ This repository hosts a reproducible workflow for monitoring how Dutch research 
 ---
 
 ## Repository Layout
-```
+
+```code
 overview-stats.ipynb   # Main notebook with numbered sections (baseline → metrics → visualisations)
 .env.example           # Template for CLIENT_ID and CLIENT_SECRET
 data/                  # Auto-generated CSV/Excel outputs (ignored by git)
@@ -39,6 +42,7 @@ agents.md              # Notes describing each automation “agent” inside the
 ---
 
 ## Prerequisites
+
 - Python 3.10+
 - Streamlit 1.30+ (for the standalone dashboard)
 - OpenAIRE AAI client credentials with access to the Graph APIs [https://develop.openaire.eu/apis]
@@ -48,6 +52,7 @@ agents.md              # Notes describing each automation “agent” inside the
 ---
 
 ## Quick Start
+
 ```bash
 git clone https://github.com/surf-ori/dutch-sources.git
 cd dutch-sources
@@ -55,6 +60,7 @@ python3 -m venv .venv && source .venv/bin/activate
 cp .env.example .env   # fill in CLIENT_ID and CLIENT_SECRET
 jupyter lab
 ```
+
 Open `overview-stats.ipynb` and execute the cells in order. The first cell installs any missing Python packages (`pandas`, `matplotlib`, `openpyxl`, `requests`, `python-dotenv`, `tqdm`, `pyarrow`). Each numbered section in the notebook is self-contained and can be re-run independently when you only need part of the pipeline. After running the dashboard export cell (Step 15), start the web dashboard with:
 
 ```bash
@@ -66,6 +72,7 @@ The Streamlit app reads `data/nl_orgs_dashboard_data.xlsx`, so rerun the noteboo
 ---
 
 ## Generated Artifacts
+
 | Artifact | Location | Purpose |
 | --- | --- | --- |
 | `nl_orgs_baseline.xlsx` | `data/` | Latest curated NL baseline sheet downloaded from Google Sheets. |
@@ -85,32 +92,40 @@ All `/data` artifacts are ignored by git to prevent accidental disclosure of cre
 ## Visual Reports
 
 ### Organisational coverage
+
 ![Total products per organisation](img/org_total_products.png)
 
 ### Datasource snapshot (latest)
+
 ![Latest datasource totals](img/datasource_totals_latest.png)
 
 ### Datasource growth check (latest vs previous)
+
 ![Latest vs previous datasource totals](img/datasource_totals_compare.png)
 
 > This comparison becomes meaningful once at least two snapshots exist in the history workbook.
 
 ### Organisations vs. their datasources
+
 ![Organisation vs data sources](img/org_vs_datasources.png)
 
 ### Organisation vs. individual datasources
+
 ![Organisation vs each datasource](img/org_vs_datasource_breakdown.png)
 
 ### OAI endpoint diagnostics
+
 ![Endpoint coverage summary](img/oai_endpoint_summary.png)
 ![OpenAIRE compatibility by type](img/oai_openaire_compatibility_by_type.png)
 
 ### Interactive datasource dashboard (Streamlit)
+
 Run `streamlit run streamlit_app.py` after exporting `data/nl_orgs_dashboard_data.xlsx` to explore the full dashboard outside Jupyter. The app mirrors all notebook-era controls—multi-select filters, range sliders for organisation/datasource totals, “quick focus” presets for common error scenarios, responsive Plotly charts, and a sortable HTML table with OpenAIRE/OAI hyperlinks.
 
 ---
 
 ## Operational Notes
+
 - **Agents**: Each section of the notebook acts like an “agent” (baseline scout, metrics harvester, datasource cartographer, snapshot scribe, viz painter). See `agents.md` for guidance on invoking just the portion you need—including the dashboard export agent that feeds the Streamlit UI.
 - **Dashboard shortcuts**: The Streamlit app includes “Quick focus” presets in the sidebar to immediately highlight zero-product OpenAIRE-compatible datasources or CRIS compatibility mismatches without manually adjusting every filter.
 - **Zero-product datasources**: Visual sections list any datasources reporting zero total research products and exclude them from the charts. Use those console messages (or the dashboard preset) to notify repository managers of harvesting gaps.
@@ -119,6 +134,7 @@ Run `streamlit run streamlit_app.py` after exporting `data/nl_orgs_dashboard_dat
 ---
 
 ## Troubleshooting
+
 | Issue | Remedy |
 | --- | --- |
 | Missing OpenAIRE credentials | Confirm `.env` is populated and the environment is reloaded before running the notebook. get the credentaisl here [https://develop.openaire.eu/apis] |
@@ -129,7 +145,9 @@ Run `streamlit run streamlit_app.py` after exporting `data/nl_orgs_dashboard_dat
 ---
 
 ## Contributing
+
 Pull requests are welcome. Please:
+
 1. Run the notebook sections relevant to your change so regenerated artifacts stay in sync.
 2. Update `agents.md` or this README if you add or rename outputs.
 3. Keep sensitive data (credentials, raw tokens, etc.) out of version control—`.gitignore` already excludes `.env` and everything under `/data`.
