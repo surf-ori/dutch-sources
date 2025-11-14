@@ -9,7 +9,12 @@ import plotly.express as px
 import plotly.graph_objects as go
 import streamlit as st
 
-st.set_page_config(page_title="Dutch Sources Monitor", layout="wide")
+PAGE_ICON_PATH = Path("img/favicon.ico")
+st.set_page_config(
+    page_title="Dutch Sources Monitor",
+    page_icon=str(PAGE_ICON_PATH) if PAGE_ICON_PATH.exists() else None,
+    layout="wide",
+)
 
 DATA_PATH = Path("data/nl_orgs_dashboard_data.xlsx")
 OPENAIRE_ORG_URL = "https://explore.openaire.eu/search/organization?organizationId="
