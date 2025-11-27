@@ -32,16 +32,6 @@ def _():
     return
 
 
-@app.cell
-def _():
-    import jupyter_notebook_toc.core as toc_gen
-
-    # Generate TOC from the current notebook
-    toc = toc_gen.generate_toc("./overview-stats.ipynb")
-    print(toc)
-    return
-
-
 @app.cell(hide_code=True)
 def _(mo):
     mo.md(r"""
@@ -50,15 +40,24 @@ def _(mo):
     return
 
 
-@app.cell
+@app.cell(hide_code=True)
 def _():
     import subprocess
-    subprocess.run('#!/usr/bin/env bash\n# Only run if your require to store the data on shared storage.\n# Sets up a symlink so writes to ./data go to the shared storage at\n# ~/data/ori-storage/dutch-sources/data.\n\nset -euo pipefail\n\nSCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"\nLINK_PATH="$SCRIPT_DIR/data"\nTARGET="${HOME}/data/ori-storage/dutch-sources/data"\n\nif [ ! -d "$TARGET" ]; then\n  echo "Target data directory not found: $TARGET" >&2\n  exit 1\nfi\n\nif [ -L "$LINK_PATH" ]; then\n  CURRENT_TARGET="$(readlink "$LINK_PATH")"\n  if [ "$CURRENT_TARGET" = "$TARGET" ]; then\n    echo "Symlink already points to target: $LINK_PATH -> $TARGET"\n    exit 0\n  else\n    echo "Symlink exists but points to $CURRENT_TARGET; not touching" >&2\n    exit 1\n  fi\nfi\n\nif [ -e "$LINK_PATH" ]; then\n  echo "Path exists and is not a symlink: $LINK_PATH. Remove or move it first." >&2\n  exit 1\nfi\n\nln -s "$TARGET" "$LINK_PATH"\necho "Created symlink: $LINK_PATH -> $TARGET"', shell=True)
+    from pathlib import Path as _Path
+
+    link_script = _Path(__file__).parent / "setup_data_link.sh"
+    if link_script.exists():
+        _symlink_result = subprocess.run(["bash", str(link_script)], check=False)
+        if _symlink_result.returncode != 0:
+            print(f"setup_data_link.sh exited with code {_symlink_result.returncode}; continuing without symlink.")
+    else:
+        print("setup_data_link.sh not found; skipping data symlink setup.")
     return
 
 
 @app.cell
 def _():
+    import marimo as mo
     from concurrent.futures import ThreadPoolExecutor, as_completed
     import os
     import csv
@@ -79,7 +78,11 @@ def _():
     pd.set_option("display.max_rows", None)
     pd.set_option("display.float_format", lambda value: f"{value:,.0f}")
 
-    load_dotenv()
+    # Load the .env that lives next to your notebook
+    dotenv_path = Path(__file__).parent / ".env"
+    load_dotenv(dotenv_path)
+
+    # After this, all the vars are available via os.getenv()
 
     CLIENT_ID = os.getenv("CLIENT_ID")
     CLIENT_SECRET = os.getenv("CLIENT_SECRET")
@@ -118,30 +121,22 @@ def _():
 
     print("Setup complete.")
     return (
-        API_PAUSE_SECONDS,
         API_USER_AGENT,
         Any,
-        BASE_URL,
-        CLIENT_ID,
-        CLIENT_SECRET,
         DATA_DIR,
         Dict,
         IMG_DIR,
-        METRIC_ORDER,
         Optional,
         PRODUCT_TYPE_LABELS,
         Path,
-        TOKEN_REFRESH_BUFFER,
-        TOKEN_URL,
         ThreadPoolExecutor,
         Union,
         as_completed,
         datetime,
-        deepcopy,
+        mo,
         pd,
         plt,
         requests,
-        time,
         tqdm,
     )
 
@@ -175,7 +170,7 @@ def _(DATA_DIR, Optional, Path, Union, pd, requests):
         if dest.exists():
             print(f"Using existing baseline file: {dest}")
             return dest
-        
+
         print(f"Downloading baseline file from {url}")
         # Download the file
         response = requests.get(url, timeout=120)
@@ -258,7 +253,7 @@ def _(DATA_DIR, Optional, Path, Union, pd, requests):
             # Skip rows without a valid name
             if not name:
                 continue
-        
+
             # Extract and normalize ROR information
             ror_id = extract_ror_id(_pick(row, "ROR"))
             # Normalize ROR link
@@ -301,7 +296,7 @@ def _(DATA_DIR, Optional, Path, Union, pd, requests):
     universities_df = pd.DataFrame(universities)
     # Display the DataFrame of universities
     universities_df
-    return normalise_ror_link, universities, universities_df
+    return normalise_ror_link, universities_df
 
 
 @app.cell(hide_code=True)
@@ -317,29 +312,21 @@ def _(mo):
 def _(
     API_PAUSE_SECONDS,
     API_USER_AGENT,
-    Any,
     BASE_URL,
     CLIENT_ID,
     CLIENT_SECRET,
-    Dict,
     METRIC_ORDER,
-    Optional,
     PRODUCT_TYPE_LABELS,
     TOKEN_REFRESH_BUFFER,
     TOKEN_URL,
-    _cell_9_access_token,
-    _cell_9_access_token_expiry,
+    Any,
+    Dict,
+    Optional,
     deepcopy,
     requests,
     time,
 ):
-    # Define the different scenarios for metrics collection.
-    # Each scenario includes a key, label, ID field, and description.
-    # For each scenario, we will build appropriate filters to query the OpenAIRE Graph API.
-    # For example, we can collect metrics based on organization affiliation,
-    # main data source, or secondary repository.
-    # Each scenario will have its own set of filters.
-
+    # Define scenarios for collecting metrics per organisation
     SCENARIO_DEFS = [
         {
             "key": "organization",
@@ -361,11 +348,6 @@ def _(
         },
     ]
 
-    # Define filter builders for each scenario.
-    # Each builder function takes an entity ID and returns a dictionary of filters
-    # for projects, data sources, and research products.
-    #   - The filters are used to query the OpenAIRE Graph API for relevant metrics.
-
     FILTER_BUILDERS = {
         "organization": lambda entity_id: {
             "projects": {"relOrganizationId": entity_id},
@@ -384,10 +366,8 @@ def _(
         },
     }
 
-    # Define an empty metrics dictionary for collecting results.
     EMPTY_METRICS = {metric: None for metric in METRIC_ORDER}
 
-    # Obtain a cached OpenAIRE access token, refreshing it when needed.
     def obtain_access_token() -> str:
         """Return a cached OpenAIRE access token, refreshing it when needed."""
         global _access_token, _access_token_expiry
@@ -412,7 +392,6 @@ def _(
         _access_token_expiry = now + max(expires_in - TOKEN_REFRESH_BUFFER, 0)
         return _access_token
 
-    # Invoke the OpenAIRE Graph API and return the decoded JSON payload.
     def call_graph_api(path: str, params: Optional[Dict[str, Any]] = None) -> Dict[str, Any]:
         """Invoke the OpenAIRE Graph API and return the decoded JSON payload."""
         url = f"{BASE_URL}{path}"
@@ -435,7 +414,6 @@ def _(
         time.sleep(API_PAUSE_SECONDS)
         return response.json()
 
-    # Retrieve the total number of matching records for the supplied endpoint.
     def fetch_num_found(path: str, params: Dict[str, Any]) -> Optional[int]:
         """Return the total number of matching records for the supplied endpoint."""
         payload = call_graph_api(path, params)
@@ -443,13 +421,10 @@ def _(
         num_found = header.get("numFound")
         return int(num_found) if num_found is not None else None
 
-    # Build filters for the given scenario and entity ID.
     def build_filters(scenario_key: str, entity_id: str) -> Dict[str, Dict[str, Any]]:
         builder = FILTER_BUILDERS[scenario_key]
         return {name: dict(filters) for name, filters in builder(entity_id).items()}
 
-
-    # Collect metrics for a given scenario and entity ID.
     def collect_metrics(scenario_key: str, entity_id: Optional[str]) -> Dict[str, Optional[int]]:
         if not entity_id:
             return deepcopy(EMPTY_METRICS)
@@ -465,7 +440,17 @@ def _(
             results[label] = fetch_num_found("/v2/researchProducts", rp_params)
 
         return results
-    return call_graph_api, collect_metrics, fetch_num_found
+
+    return (
+        SCENARIO_DEFS,
+        FILTER_BUILDERS,
+        EMPTY_METRICS,
+        build_filters,
+        call_graph_api,
+        collect_metrics,
+        fetch_num_found,
+        obtain_access_token,
+    )
 
 
 @app.cell
@@ -522,39 +507,6 @@ def _(mo):
       Products: Research software,
       Products: Other research products
     """)
-    return
-
-
-@app.cell
-def _(collect_metrics, fetch_openorg_id_for_ror, universities):
-    # Example: collect and display metrics for the first university in the list
-    test_university = universities[0]
-    print(f"Testing metrics for: {test_university['name']}")
-
-    # Determine the OpenAIRE organization identifier
-    identifier = test_university.get("OpenAIRE_ORG_ID")
-    if not identifier:
-        # Try to resolve it via the ROR ID/link
-        resolved = fetch_openorg_id_for_ror(test_university.get("ROR_LINK") or test_university.get("ROR"))
-        identifier = resolved
-
-    # Collect and display metrics    
-    print(f"\nOpenAIRE ID: {identifier}")
-    print("\nMetrics:")
-    # Collect metrics for the organization
-    metrics = collect_metrics("organization", identifier)
-
-    # Calculate total research products
-    research_products_total = sum(
-        metrics.get(product_type, 0) or 0 
-        for product_type in ["Publications", "Research data", "Research software", "Other research products"]
-    )
-    print("Total Research Products:", research_products_total)
-    print("\nBreakdown by type:")
-
-    # Display the collected metrics
-    for metric, count in metrics.items():
-        print(f"{metric}: {count}")
     return
 
 
@@ -1532,12 +1484,238 @@ def _(DATA_DIR, pd):
     return (display,)
 
 
+@app.cell(hide_code=True)
+def _(mo):
+    mo.md(r"""
+    # DATALAKE
+    In this step we add the data in a datalake, so we can query them from interactive dashboard.
+    """)
+    return
+
+
+@app.cell(hide_code=True)
+def _(mo):
+    mo.md(r"""
+    Create the DuckLake database
+    """)
+    return
+
+
 @app.cell
 def _():
-    import marimo as mo
-    return (mo,)
+    import duckdb
+    import pathlib
+
+    DUCKDB_PATH = pathlib.Path("data/ducklake.duckdb")   # <-- new file, never overwrites anything
+    con = duckdb.connect(DUCKDB_PATH)
+    return (con,)
+
+
+@app.cell(hide_code=True)
+def _(mo):
+    mo.md(r"""
+    Create the tables (run once; use IF NOT EXISTS so you can re‑run safely).
+    """)
+    return
+
+
+@app.cell
+def _(con):
+    # 1️⃣ orgs
+    con.execute("""
+      CREATE TABLE IF NOT EXISTS orgs (
+        org_id VARCHAR PRIMARY KEY,
+        name VARCHAR,
+        country VARCHAR,
+        type VARCHAR
+      )
+    """)
+
+    # 2️⃣ datasources
+    con.execute("""
+      CREATE TABLE IF NOT EXISTS datasources (
+        ds_id VARCHAR PRIMARY KEY,
+        org_id VARCHAR,
+        name VARCHAR,
+        type VARCHAR,
+        oai_endpoint VARCHAR
+      )
+    """)
+
+    # 3️⃣ snapshot
+    con.execute("""
+      CREATE TABLE IF NOT EXISTS snapshot (
+        ds_id VARCHAR,
+        totals INT,
+        publications INT,
+        research_data INT,
+        research_software INT,
+        other_products INT,
+        snapshot_date DATE,
+        PRIMARY KEY (ds_id, snapshot_date)
+      )
+    """)
+
+    # 4️⃣ endpoint_metrics
+    con.execute("""
+      CREATE TABLE IF NOT EXISTS endpoint_metrics (
+        ds_id VARCHAR,
+        oai_status VARCHAR,
+        metadata_prefixes_detected VARCHAR,
+        openaire_compatibility VARCHAR,
+        detected_support_oai_cerif_openaire BOOL,
+        detected_support_oai_openaire BOOL,
+        detected_support_openaire_data BOOL,
+        detected_support_nl_didl BOOL,
+        detected_support_rioxx BOOL,
+        has_endpoint BOOL,
+        PRIMARY KEY (ds_id)
+      )
+    """)
+    return
+
+
+@app.cell(hide_code=True)
+def _(mo):
+    mo.md(r"""
+    Insert the data from your Excel files.
+    """)
+    return
+
+
+@app.cell
+def _(DATA_DIR, con, pd):
+    # read Excel into Pandas (you already have the files in `data/`)
+    df_orgs = pd.read_excel(DATA_DIR / "nl_orgs_openaire.xlsx")
+    df_ds   = pd.read_excel(DATA_DIR / "nl_orgs_openaire_datasources.xlsx")
+    df_snap = pd.read_excel(DATA_DIR / "nl_orgs_openaire_datasources_numFound_history.xlsx")
+    df_end  = pd.read_excel(DATA_DIR / "nl_orgs_openaire_datasources_with_endpoint_metrics.xlsx")
+
+    # keep column names same as table schema
+    # orgs
+    df_orgs_clean = df_orgs.rename(columns={"OpenAIRE_ORG_ID": "org_id"}).copy()
+    if "country" not in df_orgs_clean:
+        df_orgs_clean["country"] = pd.NA
+    if "Type" in df_orgs_clean:
+        df_orgs_clean["type"] = df_orgs_clean["Type"]
+    elif "type" not in df_orgs_clean:
+        df_orgs_clean["type"] = pd.NA
+    df_orgs_clean = df_orgs_clean[["org_id", "name", "country", "type"]]
+    df_orgs_clean = df_orgs_clean[df_orgs_clean["org_id"].fillna("").astype(str).str.strip() != ""]
+    df_orgs_clean = df_orgs_clean.drop_duplicates(subset=["org_id"])
+
+    con.execute("DELETE FROM orgs")  # keep DB up‑to‑date on re‑run
+    con.register("orgs_df", df_orgs_clean)
+    con.execute("INSERT INTO orgs SELECT * FROM orgs_df")
+
+    # datasources
+    df_ds_clean = df_ds.rename(columns={
+        "OpenAIRE_DataSource_ID": "ds_id",
+        "OpenAIRE_ORG_ID": "org_id",
+        "Name": "name",
+        "Type": "type",
+        "OAI-endpoint": "oai_endpoint"
+    })[['ds_id','org_id','name','type','oai_endpoint']]
+    df_ds_clean = df_ds_clean[df_ds_clean["ds_id"].fillna("").astype(str).str.strip() != ""]
+    df_ds_clean = df_ds_clean.drop_duplicates(subset=["ds_id"])
+    con.execute("DELETE FROM datasources")
+    con.register("ds_df", df_ds_clean)
+    con.execute("INSERT INTO datasources SELECT * FROM ds_df")
+
+    # snapshot (flatten columns)
+    df_snap_clean = df_snap.rename(columns={
+        "OpenAIRE_DataSource_ID": "ds_id",
+        "Total Research Products": "totals",
+        "Publications": "publications",
+        "Research data": "research_data",
+        "Research software": "research_software",
+        "Other research products": "other_products",
+        "date_retrieved": "snapshot_date"
+    })[['ds_id','totals','publications','research_data',
+         'research_software','other_products','snapshot_date']]
+    df_snap_clean = df_snap_clean[df_snap_clean["ds_id"].fillna("").astype(str).str.strip() != ""]
+    df_snap_clean = df_snap_clean.drop_duplicates(subset=["ds_id", "snapshot_date"])
+    con.execute("DELETE FROM snapshot")
+    con.register("snap_df", df_snap_clean)
+    con.execute("INSERT INTO snapshot SELECT * FROM snap_df")
+
+    # endpoint metrics
+    df_end_clean = df_end.rename(columns={
+        "OpenAIRE_DataSource_ID": "ds_id",
+        "oai_status": "oai_status",
+        "metadata_prefixes_detected": "metadata_prefixes_detected",
+        "openaireCompatibility": "openaire_compatibility",
+        "detected_support_oai_cerif_openaire": "detected_support_oai_cerif_openaire",
+        "detected_support_oai_openaire": "detected_support_oai_openaire",
+        "detected_support_openaire_data": "detected_support_openaire_data",
+        "detected_support_nl_didl": "detected_support_nl_didl",
+        "detected_support_rioxx": "detected_support_rioxx",
+        "OAI-endpoint": "oai_endpoint"
+    })
+    df_end_clean['has_endpoint'] = df_end_clean['oai_endpoint'].astype(str).str.strip() != ''
+    df_end_clean = df_end_clean.drop_duplicates(subset=["ds_id"])
+    df_end_clean = df_end_clean[['ds_id','oai_status','metadata_prefixes_detected',
+        'openaire_compatibility','detected_support_oai_cerif_openaire',
+        'detected_support_oai_openaire','detected_support_openaire_data',
+        'detected_support_nl_didl','detected_support_rioxx',
+        'has_endpoint']]
+    con.execute("DELETE FROM endpoint_metrics")
+    con.register("end_df", df_end_clean)
+    con.execute("INSERT INTO endpoint_metrics SELECT * FROM end_df")
+    return
+
+
+@app.cell(hide_code=True)
+def _(mo):
+    mo.md(r"""
+    Add a “last_updated” column for auditability (optional).
+    """)
+    return
+
+
+@app.cell
+def _(con):
+    con.execute("UPDATE snapshot SET snapshot_date = current_date() WHERE snapshot_date IS NULL")
+    return
+
+
+@app.cell(hide_code=True)
+def _(mo):
+    mo.md(r"""
+    Create a Marimo script (marimo.py) that opens the same DuckLake DB.
+    """)
+    return
+
+
+@app.cell
+def _(con, mo):
+    # Placeholder for interactive queries; the Streamlit dashboard handles UI.
+    return
+
+
+@app.cell(hide_code=True)
+def _(mo):
+    mo.md(r"""
+    Add widgets – use mo.ui.text, mo.ui.dropdown, etc.
+    """)
+    return
+
+
+@app.cell
+def _(con, mo):
+    # Placeholder for interactive dropdowns; kept for future UI work.
+    return
+
+
+@app.cell(hide_code=True)
+def _(mo):
+    mo.md(r"""
+    Combine widgets and queries – the UI will automatically re‑run the Python function whenever a widget changes.
+
+    Save the Marimo file and launch:
+    """)
+    return
 
 
 if __name__ == "__main__":
     app.run()
-
