@@ -4,6 +4,13 @@ This repository hosts a reproducible workflow for monitoring how Dutch research 
 
 ---
 
+[![Open ETL notebook in molab](https://marimo.io/molab-shield.svg)](https://molab.marimo.io/github/surf-ori/dutch-sources/blob/main/overview-stats.py)
+
+[![Open Dashboard Notebook in molab](https://marimo.io/molab-shield.svg)](https://molab.marimo.io/github/surf-ori/dutch-sources/blob/main/overview-stats-dashboard.py)
+
+
+---
+
 ## Dutch Sources Dashboard - Screenshot
 
 ![Dutch Sources Dashboard - Screenshot](./img/ScreenshotDashboard.png)
