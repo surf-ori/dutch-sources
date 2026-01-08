@@ -1,10 +1,26 @@
 # /// script
-# dependencies = ["pandas", "matplotlib", "openpyxl", "python-dotenv", "requests", "tqdm", "pyarrow", "plotly", "ipywidgets", "anywidget", "streamlit", "streamlit-plotly-events", "jupyter-notebook-toc"]
+# dependencies = [
+#     "pandas",
+#     "matplotlib",
+#     "openpyxl",
+#     "python-dotenv",
+#     "requests",
+#     "tqdm",
+#     "pyarrow",
+#     "plotly",
+#     "ipywidgets",
+#     "anywidget",
+#     "streamlit",
+#     "streamlit-plotly-events",
+#     "jupyter-notebook-toc",
+#     "marimo>=0.17.0",
+#     "pyzmq>=27.1.0",
+# ]
 # ///
 
 import marimo
 
-__generated_with = "0.18.1"
+__generated_with = "0.18.4"
 app = marimo.App()
 
 
@@ -121,22 +137,31 @@ def _():
 
     print("Setup complete.")
     return (
+        API_PAUSE_SECONDS,
         API_USER_AGENT,
         Any,
+        BASE_URL,
+        CLIENT_ID,
+        CLIENT_SECRET,
         DATA_DIR,
         Dict,
         IMG_DIR,
+        METRIC_ORDER,
         Optional,
         PRODUCT_TYPE_LABELS,
         Path,
+        TOKEN_REFRESH_BUFFER,
+        TOKEN_URL,
         ThreadPoolExecutor,
         Union,
         as_completed,
         datetime,
+        deepcopy,
         mo,
         pd,
         plt,
         requests,
+        time,
         tqdm,
     )
 
@@ -312,16 +337,18 @@ def _(mo):
 def _(
     API_PAUSE_SECONDS,
     API_USER_AGENT,
+    Any,
     BASE_URL,
     CLIENT_ID,
     CLIENT_SECRET,
+    Dict,
     METRIC_ORDER,
+    Optional,
     PRODUCT_TYPE_LABELS,
     TOKEN_REFRESH_BUFFER,
     TOKEN_URL,
-    Any,
-    Dict,
-    Optional,
+    _cell_8_access_token,
+    _cell_8_access_token_expiry,
     deepcopy,
     requests,
     time,
@@ -440,17 +467,7 @@ def _(
             results[label] = fetch_num_found("/v2/researchProducts", rp_params)
 
         return results
-
-    return (
-        SCENARIO_DEFS,
-        FILTER_BUILDERS,
-        EMPTY_METRICS,
-        build_filters,
-        call_graph_api,
-        collect_metrics,
-        fetch_num_found,
-        obtain_access_token,
-    )
+    return call_graph_api, collect_metrics, fetch_num_found
 
 
 @app.cell
@@ -1688,7 +1705,7 @@ def _(mo):
 
 
 @app.cell
-def _(con, mo):
+def _():
     # Placeholder for interactive queries; the Streamlit dashboard handles UI.
     return
 
@@ -1702,7 +1719,7 @@ def _(mo):
 
 
 @app.cell
-def _(con, mo):
+def _():
     # Placeholder for interactive dropdowns; kept for future UI work.
     return
 
@@ -1714,6 +1731,13 @@ def _(mo):
 
     Save the Marimo file and launch:
     """)
+    return
+
+
+@app.cell
+def _(con):
+    # close the duckdb connection
+    con.close()
     return
 
 
