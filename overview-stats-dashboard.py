@@ -8,8 +8,15 @@
 
 import marimo
 
-__generated_with = "0.18.4"
-app = marimo.App(width="medium")
+__generated_with = "0.18.1"
+app = marimo.App(
+    width="medium",
+    layout_file="layouts/overview-stats-dashboard.grid.json",
+)
+
+with app.setup:
+    # Initialization code that runs before all other cells
+    pass
 
 
 @app.cell(hide_code=True)
@@ -30,244 +37,445 @@ def _(mo):
 def _():
     import duckdb
     engine = duckdb.connect("./data/ducklake.duckdb", read_only=True)
-    return (engine,)
+    return
 
 
 @app.cell
 def _():
     import altair as alt
     import polars as pl
+    import pandas as pd
     return alt, pl
 
 
 @app.cell
-def data_combined(engine, mo):
-    df_snapshot_datasources_orgs = mo.sql(
+def _(mo):
+    organisations = mo.sql(
         f"""
-        SELECT
-            o.name AS organisation_name,
-            ds.name AS data_source_name,
-            ds.type AS data_source_type,
-            em.*,
-            s.*   
-        FROM
-            snapshot s
-        JOIN
-            datasources ds
-            ON s.ds_id = ds.ds_id
-        JOIN
-            endpoint_metrics em
-            ON em.ds_id = ds.ds_id
-        JOIN
-            orgs o
-            ON ds.org_id = o.org_id
-        ORDER BY
-            s.snapshot_date DESC
+        SELECT * FROM read_xlsx("https://docs.google.com/spreadsheets/d/e/2PACX-1vTSaXarmKB4RWMlpEDueeMBnwp4_BYJDUwTgBvhqCQ_-hpco9-fa7yZrAIr0T-TIA/pub?output=xlsx")
         """,
-        engine=engine
+        output=False
     )
-    return (df_snapshot_datasources_orgs,)
+    return (organisations,)
 
 
 @app.cell
-def _(alt, df_snapshot_datasources_orgs):
-    _chart = (
-        alt.Chart(df_snapshot_datasources_orgs)
+def _(mo):
+    datasources = mo.sql(
+        f"""
+        SELECT * FROM read_xlsx("https://docs.google.com/spreadsheets/d/e/2PACX-1vQwM24DIUWmqbjxaAy62w9w8gNpOMSg5sxmFro-OexCeMzIlyUJh5iVVsVxyrcLkQ/pub?output=xlsx")
+        """,
+        output=False
+    )
+    return (datasources,)
+
+
+@app.cell
+def _(datasources, mo, organisations):
+    orgs_ds = mo.sql(
+        f"""
+        SELECT * FROM organisations o FULL JOIN datasources d ON o.openaire_org_id = d.openaire_org_id
+        """,
+        output=False
+    )
+    return (orgs_ds,)
+
+
+@app.cell(hide_code=True)
+def _(mo, orgs_ds):
+    # Step 1: Get unique values from the specified columns
+    # First, we need to get the unique values from the specified columns in the orgs_ds table. We can do this using the unique method provided by polars.
+
+    unique_grouping = orgs_ds["grouping"].unique()
+    unique_names = orgs_ds["name"].unique()
+    unique_is_geregistreerd = orgs_ds["is_geregistreerd"].unique()
+    unique_in_portal = orgs_ds["in portal"].unique()
+    unique_wenselijk = orgs_ds["Wenselijk"].unique()
+    unique_akkoord_centraal_nl_beheer = orgs_ds["akkoord centraal NL beheer"].unique()
+    unique_type = orgs_ds["Type"].unique()
+
+    # Step 2: Create dropdown widgets
+    # Next, we can create dropdown widgets using mo.ui.dropdown. We'll pass the unique values as options to the dropdown.
+
+    grouping_dropdown = mo.ui.dropdown(
+        options=["None"] + unique_grouping.to_list(),
+        value="None",  # default value
+        label="Organisation Grouping"
+    )
+
+    name_dropdown = mo.ui.dropdown(
+        options=["None"] + unique_names.to_list(),
+        value="None",  # default value
+        label="Organisation Name"
+    )
+
+    type_dropdown = mo.ui.dropdown(
+        options=["None"] + unique_type.to_list(),
+        value="None",  # default value
+        label="Data Source Type"
+    )
+
+    is_geregistreerd_dropdown = mo.ui.dropdown(
+        options=["None"] + unique_is_geregistreerd.to_list(),
+        value="None",  # default value
+        label="Data Source Is Geregistreerd/Claimed in OpenAIRE Graph"
+    )
+
+    in_portal_dropdown = mo.ui.dropdown(
+        options=["None"] + unique_in_portal.to_list(),
+        value="None",  # default value
+        label="Data Source Zichtbaar in NL Research Portal"
+    )
+
+    wenselijk_dropdown = mo.ui.dropdown(
+        options=["None"] + unique_wenselijk.to_list(),
+        value="None",  # default value
+        label="Data Source is Wenselijk in NL Research Portal"
+    )
+
+    akkoord_centraal_nl_beheer_dropdown = mo.ui.dropdown(
+        options=["None"] + unique_akkoord_centraal_nl_beheer.to_list(),
+        value="None",  # default value
+        label="Akkoord Centraal NL Beheer"
+    )
+
+    akkoord_centraal_nl_beheer_dropdown = mo.ui.dropdown(
+        options=["None"] + unique_akkoord_centraal_nl_beheer.to_list(),
+        value="None",  # default value
+        label="Data Source is Akkoord met centrale Registratie"
+    )
+
+    # Step 3: Display the dropdown widgets
+    # Finally, we can display the dropdown widgets.
+
+    # grouping_dropdown  # display the widget
+    # name_dropdown  # display the widget
+    # is_geregistreerd_dropdown  # display the widget
+    # in_portal_dropdown  # display the widget
+    # wenselijk_dropdown  # display the widget
+    # akkoord_centraal_nl_beheer_dropdown  # display the widget
+
+
+    # If you want to use the selected values for further processing, you can access them using the value attribute of the dropdown widgets, like this:
+
+    # selected_grouping = grouping_dropdown.value
+    # selected_name = name_dropdown.value
+    # selected_is_geregistreerd = is_geregistreerd_dropdown.value
+    # selected_in_portal = in_portal_dropdown.value
+    # selected_wenselijk = wenselijk_dropdown.value
+    # selected_akkoord_centraal_nl_beheer = akkoord_centraal_nl_beheer_dropdown.value
+    return (
+        akkoord_centraal_nl_beheer_dropdown,
+        grouping_dropdown,
+        in_portal_dropdown,
+        is_geregistreerd_dropdown,
+        name_dropdown,
+        type_dropdown,
+        wenselijk_dropdown,
+    )
+
+
+@app.cell(hide_code=True)
+def _(mo):
+    mo.md(r"""
+    ### Filters
+    """)
+    return
+
+
+@app.cell
+def _(grouping_dropdown):
+    grouping_dropdown
+    return
+
+
+@app.cell
+def _(name_dropdown):
+    name_dropdown
+    return
+
+
+@app.cell
+def _(type_dropdown):
+    type_dropdown
+    return
+
+
+@app.cell
+def _(is_geregistreerd_dropdown):
+    is_geregistreerd_dropdown
+    return
+
+
+@app.cell
+def _(in_portal_dropdown):
+    in_portal_dropdown
+    return
+
+
+@app.cell
+def _(wenselijk_dropdown):
+    wenselijk_dropdown
+    return
+
+
+@app.cell
+def _(akkoord_centraal_nl_beheer_dropdown):
+    akkoord_centraal_nl_beheer_dropdown
+    return
+
+
+@app.cell(hide_code=True)
+def _(
+    akkoord_centraal_nl_beheer_dropdown,
+    grouping_dropdown,
+    in_portal_dropdown,
+    is_geregistreerd_dropdown,
+    mo,
+    name_dropdown,
+    orgs_ds,
+    pl,
+    wenselijk_dropdown,
+):
+    filtered_orgs_ds = orgs_ds
+
+    if grouping_dropdown.value not in (None, "None"):
+        filtered_orgs_ds = filtered_orgs_ds.filter(
+            pl.col("grouping") == grouping_dropdown.value
+        )
+
+    if name_dropdown.value not in (None, "None"):
+        filtered_orgs_ds = filtered_orgs_ds.filter(
+            pl.col("name") == name_dropdown.value
+        )
+
+    if is_geregistreerd_dropdown.value not in (None, "None"):
+        filtered_orgs_ds = filtered_orgs_ds.filter(
+            pl.col("is_geregistreerd") == is_geregistreerd_dropdown.value
+        )
+
+    if in_portal_dropdown.value not in (None, "None"):
+        filtered_orgs_ds = filtered_orgs_ds.filter(
+            pl.col("in portal") == in_portal_dropdown.value
+        )
+
+    if wenselijk_dropdown.value not in (None, "None"):
+        filtered_orgs_ds = filtered_orgs_ds.filter(
+            pl.col("Wenselijk") == wenselijk_dropdown.value
+        )
+
+    if akkoord_centraal_nl_beheer_dropdown.value not in (None, "None"):
+        filtered_orgs_ds = filtered_orgs_ds.filter(
+            pl.col("akkoord centraal NL beheer") == akkoord_centraal_nl_beheer_dropdown.value
+        )
+
+    num_records = filtered_orgs_ds.height
+    mo.md(f"Aantal records: {num_records}")
+    return (filtered_orgs_ds,)
+
+
+@app.cell
+def _(alt, filtered_orgs_ds, pl):
+    grouping_counts = (
+        filtered_orgs_ds
+        .group_by("grouping")
+        .agg(pl.len().alias("count"))
+    )
+
+    groupings_chart = alt.Chart(grouping_counts.to_pandas()).mark_bar().encode(
+        x=alt.X("grouping", title="Organisation Grouping"),
+        y=alt.Y("count", title="Number of Records")
+    ).properties(
+        title="Number of Records by Organistion Grouping"
+    )
+
+    groupings_chart.configure_axis(labelFontSize=12, titleFontSize=14)
+    return
+
+
+@app.cell
+def _(alt, filtered_orgs_ds, pl):
+    type_counts = (
+        filtered_orgs_ds
+        .group_by("Type")
+        .agg(pl.len().alias("count"))
+    )
+
+    type_chart = alt.Chart(type_counts.to_pandas()).mark_bar().encode(
+        x=alt.X("Type", title="Data Source Type"),
+        y=alt.Y("count", title="Number of Records")
+    ).properties(
+        title="Number of Records by Data Source Type"
+    )
+
+    type_chart.configure_axis(labelFontSize=12, titleFontSize=14)
+    return
+
+
+@app.cell
+def _(alt, filtered_orgs_ds, pl):
+
+    # 1. Aggregate in Polars
+    datasources_counts = (
+        filtered_orgs_ds
+        .group_by("Data sources")
+        .agg(pl.len().alias("count"))
+    )
+
+    # 2. Build the chart from a Pandas DataFrame
+    datasources_chart = (
+        alt.Chart(datasources_counts.to_pandas())
         .mark_bar()
         .encode(
-            x=alt.X(aggregate='count', type='quantitative'),
-            y=alt.Y(field='detected_support_oai_cerif_openaire', type='nominal', sort='ascending'),
-            color=alt.Color(field='openaire_compatibility', type='nominal'),
+            x=alt.X("Data sources", type="nominal", title="Data sources"),
+            y=alt.Y("count", type="quantitative", title="Number of records"),
             tooltip=[
-                alt.Tooltip(field='detected_support_oai_cerif_openaire'),
-                alt.Tooltip(aggregate='count'),
-                alt.Tooltip(field='openaire_compatibility')
-            ]
+                alt.Tooltip(
+                    "Data sources",
+                    type="nominal",
+                    title="Data sources",
+                ),
+                alt.Tooltip(
+                    "count",
+                    type="quantitative",
+                    format=",.0f",
+                    title="Number of records",
+                ),
+            ],
         )
-        .properties(
-            title='OpenAIRE Compatibility on CERIF',
-            height=290,
-            width='container',
-            config={
-                'axis': {
-                    'grid': False
-                }
-            }
-        )
+        .properties(width="container")
+        .configure_view(stroke=None)
     )
-    _chart
+
+    datasources_chart
+
     return
 
 
 @app.cell
-def _(alt, df_snapshot_datasources_orgs):
-    _chart = (
-        alt.Chart(df_snapshot_datasources_orgs)
-        .mark_arc(innerRadius=80)
-        .encode(
-            color=alt.Color(field='data_source_type', type='nominal', scale={
-                'scheme': 'dark2'
-            }),
-            theta=alt.Theta(aggregate='count', type='quantitative'),
-            tooltip=[
-                alt.Tooltip(aggregate='count'),
-                alt.Tooltip(aggregate='count'),
-                alt.Tooltip(field='data_source_type')
-            ]
-        )
-        .properties(
-            title='Data source Types',
-            height=290,
-            width='container',
-            config={
-                'axis': {
-                    'grid': False
-                }
-            }
-        )
-    )
-    _chart
-    return
-
-
-@app.cell
-def _(engine):
-    engine.close()
-    return
-
-
-@app.cell
-def _(pl):
-    # ────────────────────────────────────────────────────────
-    # Cell 2 – Load a toy dataset (replace with your real one)
-    # ────────────────────────────────────────────────────────
-    # Example DataFrame – replace this with `df_snapshot_datasources_orgs`
-    df = pl.DataFrame(
-        {
-            "organisation_name": ["Org A"] * 4 + ["Org B"] * 3,
-            "data_source_type": ["type1", "type2", "type1", "type3"] * 1 + ["type2", "type3", "type1"],
-            "detected_support_oai_cerif_openaire": [True, False, True, False, False, True, False],
-            "openaire_compatibility": ["yes", "no", "yes", "no", "no", "yes", "no"],
-            "value": [10, 5, 12, 3, 4, 8, 2]
-        }
-    )
-    return (df,)
-
-
-@app.cell
-def _(alt, df, mo):
-    # ────────────────────────────────────────────────────────
-    # Cell 3 – Prepare the *selection* and a *dropdown* widget
-    # ────────────────────────────────────────────────────────
-    # We’ll use the “data_source_type” column as the categorical axis.
-    # 1️⃣  Create a selection that remembers what the user clicked.
-    # 2️⃣  Bind the selection to a dropdown that shows the unique values
-    #     – this will be our “underlying‑data” trigger.
-    selection = alt.selection_single(
-        fields=["data_source_type"],
-        bind=alt.binding_select(options=df["data_source_type"].unique().to_list()),
-        name="sel"
+def _(alt, filtered_orgs_ds):
+    # 1. Prepare data (Polars → Pandas)
+    researchoutput_df = (
+        filtered_orgs_ds
+        .select("Total Research Products")   # only the needed column
+        .to_pandas()
     )
 
-    # The dropdown itself is just a UI element you can inspect in the UI
-    dropdown = mo.ui.dropdown(
-        options=df["data_source_type"].unique().to_list(),
-        value=df["data_source_type"][0],  # default value
-        label="Selected source type"
-    )
-    dropdown  # display the widget
-    return (selection,)
-
-
-@app.cell
-def _(alt, df, selection):
-    # ────────────────────────────────────────────────────────
-    # Cell 4 – Bar chart that uses the selection
-    # ────────────────────────────────────────────────────────
-    bar_chart = (
-        alt.Chart(df)
+    # 2. Build the chart with Altair (using Altair's own binning)
+    researchoutput_chart = (
+        alt.Chart(researchoutput_df)
         .mark_bar()
         .encode(
-            x=alt.X("data_source_type:N", title="Data source type"),
-            y=alt.Y("count()", title="Number of rows"),
-            color=alt.Color("openaire_compatibility:N", title="OpenAIRE compatibility"),
+            x=alt.X(
+                "Total Research Products:Q",
+                bin=True,
+                title="Total Research Products"
+            ),
+            y=alt.Y(
+                "count()",
+                type="quantitative",
+                title="Number of records"
+            ),
             tooltip=[
-                alt.Tooltip("data_source_type:N", title="Type"),
-                alt.Tooltip("count()", title="Count"),
-                alt.Tooltip("openaire_compatibility:N", title="Compatibility"),
-            ]
+                alt.Tooltip(
+                    "Total Research Products:Q",
+                    bin=True,
+                    title="Total Research Products",
+                    format=",.2f",
+                ),
+                alt.Tooltip(
+                    "count()",
+                    type="quantitative",
+                    title="Number of records",
+                    format=",.0f",
+                ),
+            ],
         )
-        .add_selection(selection)          #  ➜  attaches the click‑selection
-        .transform_filter(selection)      #  ➜  keeps only the slice that was clicked
-        .properties(
-            title="Click a bar to filter the table below",
-            width="container",
-            height=300,
-            config={"view": {"stroke": None}}
-        )
+        .properties(width="container")
+        .configure_view(stroke=None)
     )
-    bar_chart
+
+    researchoutput_chart
+
     return
 
 
 @app.cell
-def _(df, mo, pl, selection):
-    # ────────────────────────────────────────────────────────
-    # Cell 5 – Table that shows the *underlying* rows
-    # ────────────────────────────────────────────────────────
-    # We react to the value of `selection` (the same field that the dropdown shows).
-    # The table updates automatically when the user clicks a new slice.
-    filtered_df = df.filter(pl.col("data_source_type") == selection.selected_data_source_type)
-    mo.ui.table(filtered_df)
-    return
-
-
-@app.cell
-def _(alt, df, selection):
-    pie_chart = (
-        alt.Chart(df)
-        .mark_arc(innerRadius=80)
-        .encode(
-            theta=alt.Theta("count()", title="Count"),
-            color=alt.Color("data_source_type:N", title="Data source type"),
-            tooltip=[
-                alt.Tooltip("data_source_type:N", title="Type"),
-                alt.Tooltip("count()", title="Count")
-            ]
-        )
-        .add_selection(selection)          # attach the same selection
-        .transform_filter(selection)      # filter the same way
-        .properties(
-            title="Click a slice to filter the table below",
-            width="container",
-            height=300,
-            config={"view": {"stroke": None}}
-        )
+def _(alt, filtered_orgs_ds, pl):
+    # 1. Aggregate and select top 10 in Polars
+    is_in_portal_counts = (
+        filtered_orgs_ds
+        .group_by("in portal")
+        .agg(pl.len().alias("count"))
+        .sort("count", descending=True)
+        .head(10)
     )
-    pie_chart
-    return
 
+    # 2. Convert to pandas for Altair
+    is_in_portal_df = is_in_portal_counts.to_pandas()
 
-@app.cell
-def _(alt, df, mo, pl):
-    selection = alt.selection_single(fields=["data_source_type"], bind=alt.binding_select(options=df["data_source_type"].unique().to_list()))
-    chart = (
-        alt.Chart(df)
+    # 3. Build the chart
+    is_in_portal_chart = (
+        alt.Chart(is_in_portal_df)
         .mark_bar()
         .encode(
-            x="data_source_type:N",
-            y="count()",
-            color="openaire_compatibility:N",
-            tooltip=["data_source_type", "count()", "openaire_compatibility"]
+            y=alt.Y(
+                "in portal:N",
+                sort="-x",
+                axis=alt.Axis(title=None),
+            ),
+            x=alt.X("count:Q", title="Number of records"),
+            tooltip=[
+                alt.Tooltip("in portal:N", title="In portal"),
+                alt.Tooltip("count:Q", format=",.0f", title="Number of records"),
+            ],
         )
-        .add_selection(selection)
-        .transform_filter(selection)
+        .properties(width="container")
+        .configure_view(stroke=None)
+        .configure_axis(grid=False)
     )
-    chart  # shows the interactive bar
 
-    # And a table that shows the underlying rows
-    mo.ui.table(df.filter(pl.col("data_source_type") == selection.selected_data_source_type))
-    return (selection,)
+    is_in_portal_chart
+    return
+
+
+@app.cell
+def _(alt, filtered_orgs_ds, pl):
+    # 1. Aggregate and take top 10 in Polars
+    wenselijk_counts = (
+        filtered_orgs_ds
+        .group_by("Wenselijk")
+        .agg(pl.len().alias("count"))
+        .sort("count", descending=True)
+        .head(10)
+    )
+
+    # 2. Convert to pandas for Altair
+    wenselijk_df = wenselijk_counts.to_pandas()
+
+    # 3. Build the chart
+    wenselijk_chart = (
+        alt.Chart(wenselijk_df)
+        .mark_bar()
+        .encode(
+            y=alt.Y(
+                "Wenselijk:N",
+                sort="-x",
+                axis=alt.Axis(title=None),
+            ),
+            x=alt.X("count:Q", title="Number of records"),
+            tooltip=[
+                alt.Tooltip("Wenselijk:N", title="Wenselijk"),
+                alt.Tooltip("count:Q", format=",.0f", title="Number of records"),
+            ],
+        )
+        .properties(width="container")
+        .configure_view(stroke=None)
+        .configure_axis(grid=False)
+    )
+
+    wenselijk_chart
+    return
 
 
 if __name__ == "__main__":
