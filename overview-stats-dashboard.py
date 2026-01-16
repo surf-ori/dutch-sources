@@ -1,14 +1,21 @@
 # /// script
 # requires-python = ">=3.13"
 # dependencies = [
+#     "altair==6.0.0",
+#     "duckdb==1.4.3",
 #     "marimo>=0.17.0",
+#     "pandas==2.3.3",
+#     "polars==1.37.1",
+#     "pyarrow==22.0.0",
+#     "pydantic-ai==1.43.0",
 #     "pyzmq>=27.1.0",
+#     "sqlglot==28.6.0",
 # ]
 # ///
 
 import marimo
 
-__generated_with = "0.18.1"
+__generated_with = "0.19.4"
 app = marimo.App(
     width="medium",
     layout_file="layouts/overview-stats-dashboard.grid.json",
@@ -16,17 +23,16 @@ app = marimo.App(
 
 with app.setup:
     # Initialization code that runs before all other cells
-    pass
+    import marimo as mo
+    import duckdb
+    engine = duckdb.connect("./data/ducklake.duckdb", read_only=True)
+    import altair as alt
+    import polars as pl
+    import pandas as pd
 
 
 @app.cell(hide_code=True)
 def _():
-    import marimo as mo
-    return (mo,)
-
-
-@app.cell(hide_code=True)
-def _(mo):
     mo.md(r"""
     # Dutch CRIS and Repositories Dashboard
     """)
@@ -35,21 +41,6 @@ def _(mo):
 
 @app.cell
 def _():
-    import duckdb
-    engine = duckdb.connect("./data/ducklake.duckdb", read_only=True)
-    return
-
-
-@app.cell
-def _():
-    import altair as alt
-    import polars as pl
-    import pandas as pd
-    return alt, pl
-
-
-@app.cell
-def _(mo):
     organisations = mo.sql(
         f"""
         SELECT * FROM read_xlsx("https://docs.google.com/spreadsheets/d/e/2PACX-1vTSaXarmKB4RWMlpEDueeMBnwp4_BYJDUwTgBvhqCQ_-hpco9-fa7yZrAIr0T-TIA/pub?output=xlsx")
@@ -60,7 +51,7 @@ def _(mo):
 
 
 @app.cell
-def _(mo):
+def _():
     datasources = mo.sql(
         f"""
         SELECT * FROM read_xlsx("https://docs.google.com/spreadsheets/d/e/2PACX-1vQwM24DIUWmqbjxaAy62w9w8gNpOMSg5sxmFro-OexCeMzIlyUJh5iVVsVxyrcLkQ/pub?output=xlsx")
@@ -71,7 +62,7 @@ def _(mo):
 
 
 @app.cell
-def _(datasources, mo, organisations):
+def _(datasources, organisations):
     orgs_ds = mo.sql(
         f"""
         SELECT * FROM organisations o FULL JOIN datasources d ON o.openaire_org_id = d.openaire_org_id
@@ -82,7 +73,7 @@ def _(datasources, mo, organisations):
 
 
 @app.cell(hide_code=True)
-def _(mo, orgs_ds):
+def _(orgs_ds):
     # Step 1: Get unique values from the specified columns
     # First, we need to get the unique values from the specified columns in the orgs_ds table. We can do this using the unique method provided by polars.
 
@@ -176,7 +167,7 @@ def _(mo, orgs_ds):
 
 
 @app.cell(hide_code=True)
-def _(mo):
+def _():
     mo.md(r"""
     ### Filters
     """)
@@ -231,10 +222,8 @@ def _(
     grouping_dropdown,
     in_portal_dropdown,
     is_geregistreerd_dropdown,
-    mo,
     name_dropdown,
     orgs_ds,
-    pl,
     wenselijk_dropdown,
 ):
     filtered_orgs_ds = orgs_ds
@@ -270,12 +259,12 @@ def _(
         )
 
     num_records = filtered_orgs_ds.height
-    mo.md(f"Aantal records: {num_records}")
+    mo.md(f"Aantal records van selectie: {num_records}")
     return (filtered_orgs_ds,)
 
 
 @app.cell
-def _(alt, filtered_orgs_ds, pl):
+def _(filtered_orgs_ds):
     grouping_counts = (
         filtered_orgs_ds
         .group_by("grouping")
@@ -294,7 +283,7 @@ def _(alt, filtered_orgs_ds, pl):
 
 
 @app.cell
-def _(alt, filtered_orgs_ds, pl):
+def _(filtered_orgs_ds):
     type_counts = (
         filtered_orgs_ds
         .group_by("Type")
@@ -313,7 +302,7 @@ def _(alt, filtered_orgs_ds, pl):
 
 
 @app.cell
-def _(alt, filtered_orgs_ds, pl):
+def _(filtered_orgs_ds):
 
     # 1. Aggregate in Polars
     datasources_counts = (
@@ -343,17 +332,16 @@ def _(alt, filtered_orgs_ds, pl):
                 ),
             ],
         )
-        .properties(width="container")
+        .properties(width="container",title="Data Sources")
         .configure_view(stroke=None)
     )
 
     datasources_chart
-
     return
 
 
 @app.cell
-def _(alt, filtered_orgs_ds):
+def _(filtered_orgs_ds):
     # 1. Prepare data (Polars → Pandas)
     researchoutput_df = (
         filtered_orgs_ds
@@ -391,17 +379,16 @@ def _(alt, filtered_orgs_ds):
                 ),
             ],
         )
-        .properties(width="container")
+        .properties(width="container",title="Number of Data Sources containing number of Research output records")
         .configure_view(stroke=None)
     )
 
     researchoutput_chart
-
     return
 
 
 @app.cell
-def _(alt, filtered_orgs_ds, pl):
+def _(filtered_orgs_ds):
     # 1. Aggregate and select top 10 in Polars
     is_in_portal_counts = (
         filtered_orgs_ds
@@ -430,7 +417,7 @@ def _(alt, filtered_orgs_ds, pl):
                 alt.Tooltip("count:Q", format=",.0f", title="Number of records"),
             ],
         )
-        .properties(width="container")
+        .properties(width="container",title="Number of Data Sources are currently Selected in the NL Research Portal")
         .configure_view(stroke=None)
         .configure_axis(grid=False)
     )
@@ -440,7 +427,7 @@ def _(alt, filtered_orgs_ds, pl):
 
 
 @app.cell
-def _(alt, filtered_orgs_ds, pl):
+def _(filtered_orgs_ds):
     # 1. Aggregate and take top 10 in Polars
     wenselijk_counts = (
         filtered_orgs_ds
@@ -469,12 +456,76 @@ def _(alt, filtered_orgs_ds, pl):
                 alt.Tooltip("count:Q", format=",.0f", title="Number of records"),
             ],
         )
-        .properties(width="container")
+        .properties(width="container",title="Aantal NL Data Sources die Wenselijk zijn om in de NL Research Portal")
         .configure_view(stroke=None)
         .configure_axis(grid=False)
     )
 
     wenselijk_chart
+    return
+
+
+@app.cell
+def _(filtered_orgs_ds):
+    # 1. Aggregate and (optionally) take top 10 in Polars
+    registered_counts = (
+        filtered_orgs_ds
+        .group_by("is_geregistreerd")
+        .agg(pl.len().alias("count"))
+        .sort("count", descending=True)
+        .head(10)   # for a boolean/low-cardinality field this doesn't really matter, but it's fine
+    )
+
+    # 2. Convert to pandas for Altair
+    registered_df = registered_counts.to_pandas()
+
+    # 3. Build the chart
+    registered_chart = (
+        alt.Chart(registered_df)
+        .mark_bar()
+        .encode(
+            y=alt.Y(
+                "is_geregistreerd:N",
+                sort="-x",
+                axis=alt.Axis(title=None),
+            ),
+            x=alt.X("count:Q", title="Number of records"),
+            tooltip=[
+                alt.Tooltip("is_geregistreerd:N", title="Geregistreerd"),
+                alt.Tooltip("count:Q", format=",.0f", title="Number of records"),
+            ],
+        )
+        .properties(
+            width="container",
+            title="Aantal Data Sources Geregistreerd in OpenAIRE Graph",
+        )
+        .configure_view(stroke=None)
+        .configure_axis(grid=False)
+    )
+
+    registered_chart
+    return
+
+
+@app.cell
+def _(filtered_orgs_ds):
+    # Select the desired columns and rename them
+    table_data = (
+        filtered_orgs_ds
+        .select([
+            pl.col("name").alias("Organisation"),
+            pl.col("grouping").alias("Group"),
+            pl.col("Name_1").alias("Data source"),
+            pl.col("Type").alias("Type"),
+            pl.col("websiteUrl").alias("URL"),
+            pl.col("is_geregistreerd").alias("is geregistreerd in OpenAIRE Graph"),
+            pl.col("in portal").alias("is Zichtbaar in NL Research Portal"),
+            pl.col("Wenselijk").alias("is Wenselijk in NL Research Portal")
+        ])
+    )
+
+    # Display the table
+    mo.ui.table(table_data)
     return
 
 
