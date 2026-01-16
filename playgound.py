@@ -16,6 +16,53 @@ def _():
 
 
 @app.cell
+def _(mo):
+    _df = mo.sql(
+        f"""
+        ATTACH '{_ducklake_path}' AS ducklake;
+        """
+    )
+    return
+
+
+@app.cell
+def _():
+    return
+
+
+@app.cell
+def _(mo):
+    _df = mo.sql(
+        f"""
+        ATTACH 'ducklake:https://explore.openresearchinf.src.surf-hosted.nl/sprouts.ducklake' AS sprouts;
+        """
+    )
+    return
+
+
+@app.cell
+def _(engine, mo):
+    # Describe the schema of a specific table in the sprouts database
+    table_schema = mo.sql(
+        """
+        DESCRIBE sprouts.example_table;
+        """,
+        engine=engine
+    )
+    table_schema
+
+    # Query some data from the specific table
+    sample_data = mo.sql(
+        """
+        SELECT * FROM sprouts.example_table LIMIT 10;
+        """,
+        engine=engine
+    )
+    sample_data
+    return
+
+
+@app.cell
 def _(Path, requests):
     # Download the data dump TAR file
 
