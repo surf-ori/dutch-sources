@@ -25,7 +25,7 @@ with app.setup:
     # Initialization code that runs before all other cells
     import marimo as mo
     import duckdb
-    engine = duckdb.connect("./data/ducklake.duckdb", read_only=True)
+    # engine = duckdb.connect("./data/ducklake.duckdb", read_only=True)
     import altair as alt
     import polars as pl
     import pandas as pd
