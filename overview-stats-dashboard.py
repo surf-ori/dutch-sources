@@ -4,6 +4,7 @@
 #     "altair==6.0.0",
 #     "duckdb==1.4.3",
 #     "marimo>=0.17.0",
+#     "openpyxl==3.1.5",
 #     "pandas==2.3.3",
 #     "polars==1.37.1",
 #     "pyarrow==22.0.0",
@@ -17,7 +18,7 @@ import marimo
 
 __generated_with = "0.19.4"
 app = marimo.App(
-    width="medium",
+    width="columns",
     layout_file="layouts/overview-stats-dashboard.grid.json",
 )
 
@@ -29,6 +30,7 @@ with app.setup:
     import altair as alt
     import polars as pl
     import pandas as pd
+    import openpyxl
 
 
 @app.cell(hide_code=True)
@@ -41,23 +43,13 @@ def _():
 
 @app.cell
 def _():
-    organisations = mo.sql(
-        f"""
-        SELECT * FROM read_xlsx("https://docs.google.com/spreadsheets/d/e/2PACX-1vTSaXarmKB4RWMlpEDueeMBnwp4_BYJDUwTgBvhqCQ_-hpco9-fa7yZrAIr0T-TIA/pub?output=xlsx")
-        """,
-        output=False
-    )
+    organisations = pd.read_excel("https://docs.google.com/spreadsheets/d/e/2PACX-1vTSaXarmKB4RWMlpEDueeMBnwp4_BYJDUwTgBvhqCQ_-hpco9-fa7yZrAIr0T-TIA/pub?output=xlsx")
     return (organisations,)
 
 
 @app.cell
 def _():
-    datasources = mo.sql(
-        f"""
-        SELECT * FROM read_xlsx("https://docs.google.com/spreadsheets/d/e/2PACX-1vQwM24DIUWmqbjxaAy62w9w8gNpOMSg5sxmFro-OexCeMzIlyUJh5iVVsVxyrcLkQ/pub?output=xlsx")
-        """,
-        output=False
-    )
+    datasources = pd.read_excel("https://docs.google.com/spreadsheets/d/e/2PACX-1vQwM24DIUWmqbjxaAy62w9w8gNpOMSg5sxmFro-OexCeMzIlyUJh5iVVsVxyrcLkQ/pub?output=xlsx")
     return (datasources,)
 
 
@@ -263,41 +255,41 @@ def _(
     return (filtered_orgs_ds,)
 
 
-@app.cell
-def _(filtered_orgs_ds):
-    grouping_counts = (
-        filtered_orgs_ds
-        .group_by("grouping")
-        .agg(pl.len().alias("count"))
-    )
-
-    groupings_chart = alt.Chart(grouping_counts.to_pandas()).mark_bar().encode(
-        x=alt.X("grouping", title="Organisation Grouping"),
-        y=alt.Y("count", title="Number of Records")
-    ).properties(
-        title="Number of Records by Organistion Grouping"
-    )
-
-    groupings_chart.configure_axis(labelFontSize=12, titleFontSize=14)
+@app.cell(column=1)
+def _():
+    mo.md(r"""
+    ### Tables
+    """)
     return
 
 
 @app.cell
 def _(filtered_orgs_ds):
-    type_counts = (
+    # Select the desired columns and rename them
+    table_data = (
         filtered_orgs_ds
-        .group_by("Type")
-        .agg(pl.len().alias("count"))
+        .select([
+            pl.col("name").alias("Organisation"),
+            pl.col("grouping").alias("Group"),
+            pl.col("Name_1").alias("Data source"),
+            pl.col("Type").alias("Type"),
+            pl.col("websiteUrl").alias("URL"),
+            pl.col("is_geregistreerd").alias("is geregistreerd in OpenAIRE Graph"),
+            pl.col("in portal").alias("is Zichtbaar in NL Research Portal"),
+            pl.col("Wenselijk").alias("is Wenselijk in NL Research Portal")
+        ])
     )
 
-    type_chart = alt.Chart(type_counts.to_pandas()).mark_bar().encode(
-        x=alt.X("Type", title="Data Source Type"),
-        y=alt.Y("count", title="Number of Records")
-    ).properties(
-        title="Number of Records by Data Source Type"
-    )
+    # Display the table
+    mo.ui.table(table_data)
+    return
 
-    type_chart.configure_axis(labelFontSize=12, titleFontSize=14)
+
+@app.cell
+def _():
+    mo.md(r"""
+    ### Charts
+    """)
     return
 
 
@@ -337,6 +329,126 @@ def _(filtered_orgs_ds):
     )
 
     datasources_chart
+    return
+
+
+@app.cell
+def _(filtered_orgs_ds):
+    # 1. Aggregate and (optionally) take top 10 in Polars
+    registered_counts = (
+        filtered_orgs_ds
+        .group_by("is_geregistreerd")
+        .agg(pl.len().alias("count"))
+        .sort("count", descending=True)
+        .head(10)   # for a boolean/low-cardinality field this doesn't really matter, but it's fine
+    )
+
+    # 2. Convert to pandas for Altair
+    registered_df = registered_counts.to_pandas()
+
+    # 3. Build the chart
+    registered_chart = (
+        alt.Chart(registered_df)
+        .mark_bar()
+        .encode(
+            y=alt.Y(
+                "is_geregistreerd:N",
+                sort="-x",
+                axis=alt.Axis(title=None),
+            ),
+            x=alt.X("count:Q", title="Number of records"),
+            tooltip=[
+                alt.Tooltip("is_geregistreerd:N", title="Geregistreerd"),
+                alt.Tooltip("count:Q", format=",.0f", title="Number of records"),
+            ],
+        )
+        .properties(
+            width="container",
+            title="Aantal Data Sources Geregistreerd in OpenAIRE Graph",
+        )
+        .configure_view(stroke=None)
+        .configure_axis(grid=False)
+    )
+
+    registered_chart
+    return
+
+
+@app.cell
+def _(filtered_orgs_ds):
+    # 1. Aggregate and take top 10 in Polars
+    wenselijk_counts = (
+        filtered_orgs_ds
+        .group_by("Wenselijk")
+        .agg(pl.len().alias("count"))
+        .sort("count", descending=True)
+        .head(10)
+    )
+
+    # 2. Convert to pandas for Altair
+    wenselijk_df = wenselijk_counts.to_pandas()
+
+    # 3. Build the chart
+    wenselijk_chart = (
+        alt.Chart(wenselijk_df)
+        .mark_bar()
+        .encode(
+            y=alt.Y(
+                "Wenselijk:N",
+                sort="-x",
+                axis=alt.Axis(title=None),
+            ),
+            x=alt.X("count:Q", title="Number of records"),
+            tooltip=[
+                alt.Tooltip("Wenselijk:N", title="Wenselijk"),
+                alt.Tooltip("count:Q", format=",.0f", title="Number of records"),
+            ],
+        )
+        .properties(width="container",title="Aantal NL Data Sources die Wenselijk zijn om in de NL Research Portal")
+        .configure_view(stroke=None)
+        .configure_axis(grid=False)
+    )
+
+    wenselijk_chart
+    return
+
+
+@app.cell
+def _(filtered_orgs_ds):
+    # 1. Aggregate and select top 10 in Polars
+    is_in_portal_counts = (
+        filtered_orgs_ds
+        .group_by("in portal")
+        .agg(pl.len().alias("count"))
+        .sort("count", descending=True)
+        .head(10)
+    )
+
+    # 2. Convert to pandas for Altair
+    is_in_portal_df = is_in_portal_counts.to_pandas()
+
+    # 3. Build the chart
+    is_in_portal_chart = (
+        alt.Chart(is_in_portal_df)
+        .mark_bar()
+        .encode(
+            y=alt.Y(
+                "in portal:N",
+                sort="-x",
+                axis=alt.Axis(title=None),
+            ),
+            x=alt.X("count:Q", title="Number of records"),
+            tooltip=[
+                alt.Tooltip("in portal:N", title="In portal"),
+                alt.Tooltip("count:Q", format=",.0f", title="Number of records"),
+            ],
+        )
+        .properties(width="container",title="Number of Data Sources are currently Selected in the NL Research Portal")
+        .configure_view(stroke=None)
+        .configure_axis(grid=False)
+    )
+
+    is_in_portal_chart
     return
 
 
@@ -389,143 +501,39 @@ def _(filtered_orgs_ds):
 
 @app.cell
 def _(filtered_orgs_ds):
-    # 1. Aggregate and select top 10 in Polars
-    is_in_portal_counts = (
+    type_counts = (
         filtered_orgs_ds
-        .group_by("in portal")
+        .group_by("Type")
         .agg(pl.len().alias("count"))
-        .sort("count", descending=True)
-        .head(10)
     )
 
-    # 2. Convert to pandas for Altair
-    is_in_portal_df = is_in_portal_counts.to_pandas()
-
-    # 3. Build the chart
-    is_in_portal_chart = (
-        alt.Chart(is_in_portal_df)
-        .mark_bar()
-        .encode(
-            y=alt.Y(
-                "in portal:N",
-                sort="-x",
-                axis=alt.Axis(title=None),
-            ),
-            x=alt.X("count:Q", title="Number of records"),
-            tooltip=[
-                alt.Tooltip("in portal:N", title="In portal"),
-                alt.Tooltip("count:Q", format=",.0f", title="Number of records"),
-            ],
-        )
-        .properties(width="container",title="Number of Data Sources are currently Selected in the NL Research Portal")
-        .configure_view(stroke=None)
-        .configure_axis(grid=False)
+    type_chart = alt.Chart(type_counts.to_pandas()).mark_bar().encode(
+        x=alt.X("Type", title="Data Source Type"),
+        y=alt.Y("count", title="Number of Records")
+    ).properties(
+        title="Number of Records by Data Source Type"
     )
 
-    is_in_portal_chart
+    type_chart.configure_axis(labelFontSize=12, titleFontSize=14)
     return
 
 
 @app.cell
 def _(filtered_orgs_ds):
-    # 1. Aggregate and take top 10 in Polars
-    wenselijk_counts = (
+    grouping_counts = (
         filtered_orgs_ds
-        .group_by("Wenselijk")
+        .group_by("grouping")
         .agg(pl.len().alias("count"))
-        .sort("count", descending=True)
-        .head(10)
     )
 
-    # 2. Convert to pandas for Altair
-    wenselijk_df = wenselijk_counts.to_pandas()
-
-    # 3. Build the chart
-    wenselijk_chart = (
-        alt.Chart(wenselijk_df)
-        .mark_bar()
-        .encode(
-            y=alt.Y(
-                "Wenselijk:N",
-                sort="-x",
-                axis=alt.Axis(title=None),
-            ),
-            x=alt.X("count:Q", title="Number of records"),
-            tooltip=[
-                alt.Tooltip("Wenselijk:N", title="Wenselijk"),
-                alt.Tooltip("count:Q", format=",.0f", title="Number of records"),
-            ],
-        )
-        .properties(width="container",title="Aantal NL Data Sources die Wenselijk zijn om in de NL Research Portal")
-        .configure_view(stroke=None)
-        .configure_axis(grid=False)
+    groupings_chart = alt.Chart(grouping_counts.to_pandas()).mark_bar().encode(
+        x=alt.X("grouping", title="Organisation Grouping"),
+        y=alt.Y("count", title="Number of Records")
+    ).properties(
+        title="Number of Records by Organistion Grouping"
     )
 
-    wenselijk_chart
-    return
-
-
-@app.cell
-def _(filtered_orgs_ds):
-    # 1. Aggregate and (optionally) take top 10 in Polars
-    registered_counts = (
-        filtered_orgs_ds
-        .group_by("is_geregistreerd")
-        .agg(pl.len().alias("count"))
-        .sort("count", descending=True)
-        .head(10)   # for a boolean/low-cardinality field this doesn't really matter, but it's fine
-    )
-
-    # 2. Convert to pandas for Altair
-    registered_df = registered_counts.to_pandas()
-
-    # 3. Build the chart
-    registered_chart = (
-        alt.Chart(registered_df)
-        .mark_bar()
-        .encode(
-            y=alt.Y(
-                "is_geregistreerd:N",
-                sort="-x",
-                axis=alt.Axis(title=None),
-            ),
-            x=alt.X("count:Q", title="Number of records"),
-            tooltip=[
-                alt.Tooltip("is_geregistreerd:N", title="Geregistreerd"),
-                alt.Tooltip("count:Q", format=",.0f", title="Number of records"),
-            ],
-        )
-        .properties(
-            width="container",
-            title="Aantal Data Sources Geregistreerd in OpenAIRE Graph",
-        )
-        .configure_view(stroke=None)
-        .configure_axis(grid=False)
-    )
-
-    registered_chart
-    return
-
-
-@app.cell
-def _(filtered_orgs_ds):
-    # Select the desired columns and rename them
-    table_data = (
-        filtered_orgs_ds
-        .select([
-            pl.col("name").alias("Organisation"),
-            pl.col("grouping").alias("Group"),
-            pl.col("Name_1").alias("Data source"),
-            pl.col("Type").alias("Type"),
-            pl.col("websiteUrl").alias("URL"),
-            pl.col("is_geregistreerd").alias("is geregistreerd in OpenAIRE Graph"),
-            pl.col("in portal").alias("is Zichtbaar in NL Research Portal"),
-            pl.col("Wenselijk").alias("is Wenselijk in NL Research Portal")
-        ])
-    )
-
-    # Display the table
-    mo.ui.table(table_data)
+    groupings_chart.configure_axis(labelFontSize=12, titleFontSize=14)
     return
 
 
