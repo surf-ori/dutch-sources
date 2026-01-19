@@ -22,9 +22,14 @@ app = marimo.App(
     layout_file="layouts/overview-stats-dashboard.grid.json",
 )
 
-with app.setup:
+async with app.setup:
     # Initialization code that runs before all other cells
     import marimo as mo
+    import micropip
+
+    # Install the packages when running in WASM
+    await micropip.install(["polars", "openpyxl"])
+
     import duckdb
     # engine = duckdb.connect("./data/ducklake.duckdb", read_only=True)
     import altair as alt
@@ -338,7 +343,7 @@ def _(filtered_orgs_ds):
 
     # Create a dictionary to hold the stats
     stats = {
-        "Totaal aantal Records in selectie": total_records,
+        "Totaal aantal Data Sources": total_records,
         "Aantal Geregistreerd in OpenAIRE Graph": ja_is_geregistreerd,
         "Aantal Actief in NL Research Portal": ja_in_portal,
         "Aantal Wenselijk in NL Research Portal": ja_wenselijk,
