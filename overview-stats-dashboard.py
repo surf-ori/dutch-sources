@@ -154,6 +154,13 @@ def _(orgs_ds):
         is_geregistreerd_dropdown,
         name_dropdown,
         type_dropdown,
+        unique_akkoord_centraal_nl_beheer,
+        unique_grouping,
+        unique_in_portal,
+        unique_is_geregistreerd,
+        unique_names,
+        unique_type,
+        unique_wenselijk,
         wenselijk_dropdown,
     )
 
@@ -255,7 +262,112 @@ def _(
     return (filtered_orgs_ds,)
 
 
+@app.cell
+def _(
+    unique_akkoord_centraal_nl_beheer,
+    unique_grouping,
+    unique_in_portal,
+    unique_is_geregistreerd,
+    unique_names,
+    unique_type,
+    unique_wenselijk,
+):
+    mo.sidebar(
+        [
+            mo.md("### Filters"),
+            mo.md("**Organisaties:**"),
+            mo.ui.dropdown(
+                options=["None"] + unique_grouping.to_list(),
+                value="None",  # default value
+                label=f"{mo.icon('lucide:folder')} Groep"
+            ),
+            mo.ui.dropdown(
+                options=["None"] + unique_names.to_list(),
+                value="None",  # default value
+                label=f"{mo.icon('lucide:user')} Org"
+            ),
+            mo.md("**Data Sources:**"),
+            mo.ui.dropdown(
+                options=["None"] + unique_type.to_list(),
+                value="None",  # default value
+                label=f"{mo.icon('lucide:type')} Type"
+            ),
+            mo.ui.dropdown(
+                options=["None"] + unique_is_geregistreerd.to_list(),
+                value="None",  # default value
+                label=f"{mo.icon('lucide:check-square')} Geregistreerd"
+            ),
+            mo.ui.dropdown(
+                options=["None"] + unique_in_portal.to_list(),
+                value="None",  # default value
+                label=f"{mo.icon('lucide:globe')} Actief In Portal"
+            ),
+            mo.ui.dropdown(
+                options=["None"] + unique_wenselijk.to_list(),
+                value="None",  # default value
+                label=f"{mo.icon('lucide:heart')} Wenselijk in Portal"
+            ),
+            mo.ui.dropdown(
+                options=["None"] + unique_akkoord_centraal_nl_beheer.to_list(),
+                value="None",  # default value
+                label=f"{mo.icon('lucide:shield')} SURF beheerd"
+            ),
+        ],
+        width="300px"
+    )
+    return
+
+
 @app.cell(column=1)
+def _():
+    mo.md(r"""
+    ### Cards
+    """)
+    return
+
+
+@app.cell
+def _(filtered_orgs_ds):
+    mo.stop(filtered_orgs_ds is None)
+
+    # Calculate the required statistics
+    total_records = filtered_orgs_ds.height
+    ja_is_geregistreerd = filtered_orgs_ds.filter(pl.col("is_geregistreerd") == "Ja").height
+    ja_in_portal = filtered_orgs_ds.filter(pl.col("in portal") == "Ja").height
+    ja_wenselijk = filtered_orgs_ds.filter(pl.col("Wenselijk") == "Ja").height
+
+    # Create a dictionary to hold the stats
+    stats = {
+        "Totaal aantal Records in selectie": total_records,
+        "Aantal Geregistreerd in OpenAIRE Graph": ja_is_geregistreerd,
+        "Aantal Actief in NL Research Portal": ja_in_portal,
+        "Aantal Wenselijk in NL Research Portal": ja_wenselijk,
+    }
+
+    # Create the cards
+    _cards = [
+        mo.stat(
+            label=label.replace("_", " "),
+            value=value,
+            bordered=True,
+        )
+        for label, value in stats.items()
+    ]
+
+    # Title for the section
+    _title = "### **Filtered Data Source Statistics**"
+
+    # Display the cards
+    mo.vstack(
+        [
+            mo.md(_title),
+            mo.hstack(_cards, widths="equal", align="center"),
+        ]
+    )
+    return
+
+
+@app.cell
 def _():
     mo.md(r"""
     ### Tables
@@ -282,6 +394,35 @@ def _(filtered_orgs_ds):
 
     # Display the table
     mo.ui.table(table_data)
+    return (table_data,)
+
+
+@app.cell
+def _(table_data):
+    # replace _df with your data source
+    group_donut_chart = (
+        alt.Chart(table_data)
+        .mark_arc(innerRadius=100)
+        .encode(
+            color=alt.Color(field='Group', type='nominal'),
+            theta=alt.Theta(aggregate='count', type='quantitative'),
+            tooltip=[
+                alt.Tooltip(aggregate='count'),
+                alt.Tooltip(aggregate='count'),
+                alt.Tooltip(field='Group')
+            ]
+        )
+        .properties(
+            height=290,
+            width='container',
+            config={
+                'axis': {
+                    'grid': False
+                }
+            }
+        )
+    )
+    group_donut_chart
     return
 
 
