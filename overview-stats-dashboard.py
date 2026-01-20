@@ -48,6 +48,24 @@ def _():
 
 @app.cell
 def _():
+    mo.md(r"""
+    This Dashboard is part of the **PID to Portal project** from SURF and UNL.
+
+    The aim is to have all Dutch Research Organisations have their data sources represented correctly in the [Netherlands Research Portal](https://netherlands.openaire.eu/).
+    """)
+    return
+
+
+@app.cell
+def _():
+    mo.md(r"""
+    ![SURFlogo](https://www.surf.nl/themes/surf/logo.svg)
+    """)
+    return
+
+
+@app.cell
+def _():
     organisations = pd.read_excel("https://docs.google.com/spreadsheets/d/e/2PACX-1vTSaXarmKB4RWMlpEDueeMBnwp4_BYJDUwTgBvhqCQ_-hpco9-fa7yZrAIr0T-TIA/pub?output=xlsx")
     return (organisations,)
 
@@ -277,7 +295,7 @@ def _(
     unique_type,
     unique_wenselijk,
 ):
-    mo.sidebar(
+    mo.vstack(
         [
             mo.md("### Filters"),
             mo.md("**Organisaties:**"),
@@ -300,25 +318,24 @@ def _(
             mo.ui.dropdown(
                 options=["None"] + unique_is_geregistreerd.to_list(),
                 value="None",  # default value
-                label=f"{mo.icon('lucide:check-square')} Geregistreerd"
+                label=f"{mo.icon('lucide:check-square')} CLaimed/Registered"
             ),
             mo.ui.dropdown(
                 options=["None"] + unique_in_portal.to_list(),
                 value="None",  # default value
-                label=f"{mo.icon('lucide:globe')} Actief In Portal"
+                label=f"{mo.icon('lucide:globe')} Active In Portal"
             ),
             mo.ui.dropdown(
                 options=["None"] + unique_wenselijk.to_list(),
                 value="None",  # default value
-                label=f"{mo.icon('lucide:heart')} Wenselijk in Portal"
+                label=f"{mo.icon('lucide:heart')} Needed In Portal"
             ),
             mo.ui.dropdown(
                 options=["None"] + unique_akkoord_centraal_nl_beheer.to_list(),
                 value="None",  # default value
-                label=f"{mo.icon('lucide:shield')} SURF beheerd"
+                label=f"{mo.icon('lucide:shield')} Managed by SURF"
             ),
-        ],
-        width="300px"
+        ]
     )
     return
 
@@ -407,7 +424,7 @@ def _(table_data):
     # replace _df with your data source
     group_donut_chart = (
         alt.Chart(table_data)
-        .mark_arc(innerRadius=100)
+        .mark_arc(innerRadius=50)
         .encode(
             color=alt.Color(field='Group', type='nominal'),
             theta=alt.Theta(aggregate='count', type='quantitative'),
@@ -428,6 +445,35 @@ def _(table_data):
         )
     )
     group_donut_chart
+    return
+
+
+@app.cell
+def _(table_data):
+    # replace _df with your data source
+    type_donut_chart = (
+        alt.Chart(table_data)
+        .mark_arc(innerRadius=50)
+        .encode(
+            color=alt.Color(field='Type', type='nominal'),
+            theta=alt.Theta(aggregate='count', type='quantitative'),
+            tooltip=[
+                alt.Tooltip(aggregate='count'),
+                alt.Tooltip(aggregate='count'),
+                alt.Tooltip(field='Type')
+            ]
+        )
+        .properties(
+            height=290,
+            width='container',
+            config={
+                'axis': {
+                    'grid': False
+                }
+            }
+        )
+    )
+    type_donut_chart
     return
 
 
