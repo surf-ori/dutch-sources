@@ -66,13 +66,47 @@ def _():
 
 @app.cell
 def _():
-    organisations = pd.read_excel("https://docs.google.com/spreadsheets/d/e/2PACX-1vTSaXarmKB4RWMlpEDueeMBnwp4_BYJDUwTgBvhqCQ_-hpco9-fa7yZrAIr0T-TIA/pub?output=xlsx")
+    nl_orgs_baseline = pd.read_excel("https://docs.google.com/spreadsheets/d/e/2PACX-1vTDQiWDIaI1SZkPTMNCovicBhA-nQND1drXoUKvrG1O_Ga3hLDRvmQZao_TvNgmNQ/pub?output=xlsx")
+    return (nl_orgs_baseline,)
+
+
+@app.cell
+def _():
+    orgs_ids_matching = pd.read_excel("https://docs.google.com/spreadsheets/d/e/2PACX-1vTSaXarmKB4RWMlpEDueeMBnwp4_BYJDUwTgBvhqCQ_-hpco9-fa7yZrAIr0T-TIA/pub?output=xlsx")
+    return (orgs_ids_matching,)
+
+
+@app.cell
+def _(orgs_ids_matching):
+    orgs_ids_matching_with_links = orgs_ids_matching.assign(
+        OpenAIRE_ORG_LINK="https://netherlands.openaire.eu/search/organization?organizationId=" + orgs_ids_matching["OpenAIRE_ORG_ID"]
+    )
+    return (orgs_ids_matching_with_links,)
+
+
+@app.cell
+def _(nl_orgs_baseline, orgs_ids_matching_with_links):
+    organisations = mo.sql(
+        f"""
+        SELECT b.full_name_in_English AS name, b.acronym_EN, b.main_grouping AS grouping, m.OpenAIRE_ORG_LINK, m.OpenAIRE_ORG_ID, b.ROR_LINK
+        FROM nl_orgs_baseline b 
+        JOIN orgs_ids_matching_with_links m ON b.ROR = m.ROR
+        """
+    )
     return (organisations,)
 
 
 @app.cell
 def _():
-    datasources = pd.read_excel("https://docs.google.com/spreadsheets/d/e/2PACX-1vQwM24DIUWmqbjxaAy62w9w8gNpOMSg5sxmFro-OexCeMzIlyUJh5iVVsVxyrcLkQ/pub?output=xlsx")
+    datasources_baseline = pd.read_excel("https://docs.google.com/spreadsheets/d/e/2PACX-1vQwM24DIUWmqbjxaAy62w9w8gNpOMSg5sxmFro-OexCeMzIlyUJh5iVVsVxyrcLkQ/pub?output=xlsx")
+    return (datasources_baseline,)
+
+
+@app.cell
+def _(datasources_baseline):
+    datasources = datasources_baseline.assign(
+        OpenAIRE_DataSource_LINK="https://netherlands.openaire.eu/search/dataprovider?datasourceId=" + datasources_baseline["OpenAIRE_DataSource_ID"]
+    )
     return (datasources,)
 
 
@@ -88,6 +122,14 @@ def _(datasources, organisations):
 
 
 @app.cell(hide_code=True)
+def _():
+    mo.md(r"""
+    ### Filters
+    """)
+    return
+
+
+@app.cell
 def _(orgs_ds):
     # Step 1: Get unique values from the specified columns
     # First, we need to get the unique values from the specified columns in the orgs_ds table. We can do this using the unique method provided by polars.
@@ -106,60 +148,65 @@ def _(orgs_ds):
     grouping_dropdown = mo.ui.dropdown(
         options=["None"] + unique_grouping.to_list(),
         value="None",  # default value
-        label="Organisation Grouping"
+        label=f"{mo.icon('lucide:folder')} Group"
     )
 
     name_dropdown = mo.ui.dropdown(
         options=["None"] + unique_names.to_list(),
         value="None",  # default value
-        label="Organisation Name"
+        label=f"{mo.icon('lucide:landmark')} Org"
     )
 
     type_dropdown = mo.ui.dropdown(
         options=["None"] + unique_type.to_list(),
         value="None",  # default value
-        label="Data Source Type"
+        label=f"{mo.icon('lucide:type')} Type"
     )
 
     is_geregistreerd_dropdown = mo.ui.dropdown(
         options=["None"] + unique_is_geregistreerd.to_list(),
         value="None",  # default value
-        label="Data Source Is Geregistreerd/Claimed in OpenAIRE Graph"
+        label=f"{mo.icon('lucide:check-square')} Claimed/Registered"
     )
 
     in_portal_dropdown = mo.ui.dropdown(
         options=["None"] + unique_in_portal.to_list(),
         value="None",  # default value
-        label="Data Source Zichtbaar in NL Research Portal"
+        label=f"{mo.icon('lucide:globe')} Active In Portal"
     )
 
     wenselijk_dropdown = mo.ui.dropdown(
         options=["None"] + unique_wenselijk.to_list(),
         value="None",  # default value
-        label="Data Source is Wenselijk in NL Research Portal"
+        label=f"{mo.icon('lucide:heart')} Required In Portal"
     )
 
     akkoord_centraal_nl_beheer_dropdown = mo.ui.dropdown(
         options=["None"] + unique_akkoord_centraal_nl_beheer.to_list(),
         value="None",  # default value
-        label="Akkoord Centraal NL Beheer"
+        label=f"{mo.icon('lucide:shield')} Managed by SURF"
     )
 
-    akkoord_centraal_nl_beheer_dropdown = mo.ui.dropdown(
-        options=["None"] + unique_akkoord_centraal_nl_beheer.to_list(),
-        value="None",  # default value
-        label="Data Source is Akkoord met centrale Registratie"
-    )
 
     # Step 3: Display the dropdown widgets
     # Finally, we can display the dropdown widgets.
 
-    # grouping_dropdown  # display the widget
-    # name_dropdown  # display the widget
-    # is_geregistreerd_dropdown  # display the widget
-    # in_portal_dropdown  # display the widget
-    # wenselijk_dropdown  # display the widget
-    # akkoord_centraal_nl_beheer_dropdown  # display the widget
+    mo.vstack(
+        [
+            mo.md("### Filters"),
+        
+            mo.md("**Organisaties:**"),
+            grouping_dropdown, # display the widget
+            name_dropdown,  # display the widget
+        
+            mo.md("**Data Sources:**"),
+            type_dropdown, # display the widget
+            is_geregistreerd_dropdown,  # display the widget
+            in_portal_dropdown,  # display the widget
+            wenselijk_dropdown,  # display the widget
+            akkoord_centraal_nl_beheer_dropdown,  # display the widget
+        ]
+    )
 
 
     # If you want to use the selected values for further processing, you can access them using the value attribute of the dropdown widgets, like this:
@@ -177,68 +224,11 @@ def _(orgs_ds):
         is_geregistreerd_dropdown,
         name_dropdown,
         type_dropdown,
-        unique_akkoord_centraal_nl_beheer,
-        unique_grouping,
-        unique_in_portal,
-        unique_is_geregistreerd,
-        unique_names,
-        unique_type,
-        unique_wenselijk,
         wenselijk_dropdown,
     )
 
 
-@app.cell(hide_code=True)
-def _():
-    mo.md(r"""
-    ### Filters
-    """)
-    return
-
-
 @app.cell
-def _(grouping_dropdown):
-    grouping_dropdown
-    return
-
-
-@app.cell
-def _(name_dropdown):
-    name_dropdown
-    return
-
-
-@app.cell
-def _(type_dropdown):
-    type_dropdown
-    return
-
-
-@app.cell
-def _(is_geregistreerd_dropdown):
-    is_geregistreerd_dropdown
-    return
-
-
-@app.cell
-def _(in_portal_dropdown):
-    in_portal_dropdown
-    return
-
-
-@app.cell
-def _(wenselijk_dropdown):
-    wenselijk_dropdown
-    return
-
-
-@app.cell
-def _(akkoord_centraal_nl_beheer_dropdown):
-    akkoord_centraal_nl_beheer_dropdown
-    return
-
-
-@app.cell(hide_code=True)
 def _(
     akkoord_centraal_nl_beheer_dropdown,
     grouping_dropdown,
@@ -246,6 +236,7 @@ def _(
     is_geregistreerd_dropdown,
     name_dropdown,
     orgs_ds,
+    type_dropdown,
     wenselijk_dropdown,
 ):
     filtered_orgs_ds = orgs_ds
@@ -258,6 +249,11 @@ def _(
     if name_dropdown.value not in (None, "None"):
         filtered_orgs_ds = filtered_orgs_ds.filter(
             pl.col("name") == name_dropdown.value
+        )
+
+    if type_dropdown.value not in (None, "None"):
+        filtered_orgs_ds = filtered_orgs_ds.filter(
+            pl.col("Type") == type_dropdown.value
         )
 
     if is_geregistreerd_dropdown.value not in (None, "None"):
@@ -281,63 +277,8 @@ def _(
         )
 
     num_records = filtered_orgs_ds.height
-    mo.md(f"Aantal records van selectie: {num_records}")
+    mo.md(f"Records in selection: {num_records}")
     return (filtered_orgs_ds,)
-
-
-@app.cell
-def _(
-    unique_akkoord_centraal_nl_beheer,
-    unique_grouping,
-    unique_in_portal,
-    unique_is_geregistreerd,
-    unique_names,
-    unique_type,
-    unique_wenselijk,
-):
-    mo.vstack(
-        [
-            mo.md("### Filters"),
-            mo.md("**Organisaties:**"),
-            mo.ui.dropdown(
-                options=["None"] + unique_grouping.to_list(),
-                value="None",  # default value
-                label=f"{mo.icon('lucide:folder')} Groep"
-            ),
-            mo.ui.dropdown(
-                options=["None"] + unique_names.to_list(),
-                value="None",  # default value
-                label=f"{mo.icon('lucide:user')} Org"
-            ),
-            mo.md("**Data Sources:**"),
-            mo.ui.dropdown(
-                options=["None"] + unique_type.to_list(),
-                value="None",  # default value
-                label=f"{mo.icon('lucide:type')} Type"
-            ),
-            mo.ui.dropdown(
-                options=["None"] + unique_is_geregistreerd.to_list(),
-                value="None",  # default value
-                label=f"{mo.icon('lucide:check-square')} CLaimed/Registered"
-            ),
-            mo.ui.dropdown(
-                options=["None"] + unique_in_portal.to_list(),
-                value="None",  # default value
-                label=f"{mo.icon('lucide:globe')} Active In Portal"
-            ),
-            mo.ui.dropdown(
-                options=["None"] + unique_wenselijk.to_list(),
-                value="None",  # default value
-                label=f"{mo.icon('lucide:heart')} Needed In Portal"
-            ),
-            mo.ui.dropdown(
-                options=["None"] + unique_akkoord_centraal_nl_beheer.to_list(),
-                value="None",  # default value
-                label=f"{mo.icon('lucide:shield')} Managed by SURF"
-            ),
-        ]
-    )
-    return
 
 
 @app.cell(column=1)
@@ -360,10 +301,10 @@ def _(filtered_orgs_ds):
 
     # Create a dictionary to hold the stats
     stats = {
-        "Totaal aantal Data Sources": total_records,
-        "Aantal Geregistreerd in OpenAIRE Graph": ja_is_geregistreerd,
-        "Aantal Actief in NL Research Portal": ja_in_portal,
-        "Aantal Wenselijk in NL Research Portal": ja_wenselijk,
+        "# Data Sources": total_records,
+        "# Registered in OpenAIRE Graph": ja_is_geregistreerd,
+        "# Active in NL Research Portal": ja_in_portal,
+        "# Required in NL Research Portal": ja_wenselijk,
     }
 
     # Create the cards
@@ -407,10 +348,12 @@ def _(filtered_orgs_ds):
             pl.col("grouping").alias("Group"),
             pl.col("Name_1").alias("Data source"),
             pl.col("Type").alias("Type"),
-            pl.col("websiteUrl").alias("URL"),
             pl.col("is_geregistreerd").alias("is geregistreerd in OpenAIRE Graph"),
             pl.col("in portal").alias("is Zichtbaar in NL Research Portal"),
-            pl.col("Wenselijk").alias("is Wenselijk in NL Research Portal")
+            pl.col("Wenselijk").alias("is Wenselijk in NL Research Portal"),
+            pl.col("OpenAIRE_ORG_LINK").alias("Organisation in NL Research Portal"),
+            pl.col("OpenAIRE_DataSource_LINK").alias("DataSource in NL Research Portal"),
+            pl.col("websiteUrl").alias("Website")
         ])
     )
 
