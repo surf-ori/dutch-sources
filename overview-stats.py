@@ -15,13 +15,24 @@
 #     "jupyter-notebook-toc",
 #     "marimo>=0.17.0",
 #     "pyzmq>=27.1.0",
+#     "duckdb==1.4.3",
+#     "pydantic-ai==1.46.0",
+#     "sqlglot==28.6.0",
+#     "polars[pyarrow]==1.37.1",
+#     "python-lsp-server==1.14.0",
+#     "websockets==15.0.1",
+#     "python-lsp-ruff==2.3.0",
+#     "altair==6.0.0",
+#     "vegafusion==2.0.3",
+#     "vl-convert-python==1.9.0.post1",
+#     "pytest==9.0.2",
 # ]
 # ///
 
 import marimo
 
-__generated_with = "0.18.4"
-app = marimo.App()
+__generated_with = "0.19.5"
+app = marimo.App(width="full")
 
 
 @app.cell(hide_code=True)
@@ -794,8 +805,8 @@ def _(mo):
 @app.cell(hide_code=True)
 def _(mo):
     mo.md(r"""
-    ## 9. Append snapshot to parquet history
-    Keep a cumulative parquet log so repeated snapshots form a time series.
+    ## 9. Append snapshot to history file
+    Keep a cumulative log so repeated snapshots form a time series.
     """)
     return
 
