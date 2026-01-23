@@ -92,7 +92,7 @@ def _(orgs_ids_matching):
 
 @app.cell
 def _(nl_orgs_baseline, orgs_ids_matching_with_links):
-    # Merge the baseline table continaing RORs, with the table containing ROR's and OpenAIRE ORG ID's
+    # Merge the baseline table containing RORs, with the table containing ROR's and OpenAIRE ORG ID's
 
     # SQL join later on was not working in WASM , because the this line produced a polars data frame:
     # SELECT b.full_name_in_English AS name, b.acronym_EN, b.main_grouping AS grouping, m.OpenAIRE_ORG_LINK, m.OpenAIRE_ORG_ID, b.ROR_LINK FROM nl_orgs_baseline b JOIN orgs_ids_matching_with_links m ON b.ROR = m.ROR
