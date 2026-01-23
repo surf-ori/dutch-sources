@@ -92,24 +92,37 @@ def _(orgs_ids_matching):
 
 @app.cell
 def _(nl_orgs_baseline, orgs_ids_matching_with_links):
-    organisations = mo.sql(
-        f"""
-        SELECT b.full_name_in_English AS name, b.acronym_EN, b.main_grouping AS grouping, m.OpenAIRE_ORG_LINK, m.OpenAIRE_ORG_ID, b.ROR_LINK
-        FROM nl_orgs_baseline b 
-        JOIN orgs_ids_matching_with_links m ON b.ROR = m.ROR
-        """
-    )
+    # Merge the baseline table continaing RORs, with the table containing ROR's and OpenAIRE ORG ID's
+
+    # SQL join later on was not working in WASM , because the this line produced a polars data frame:
+    # SELECT b.full_name_in_English AS name, b.acronym_EN, b.main_grouping AS grouping, m.OpenAIRE_ORG_LINK, m.OpenAIRE_ORG_ID, b.ROR_LINK FROM nl_orgs_baseline b JOIN orgs_ids_matching_with_links m ON b.ROR = m.ROR
+    # we replaced it with a merge with Panda's, to keep it Panda's, in order to merge with the data sources data frame later on.
+
+    # keep only the columns you truly need from each side to avoid _x/_y
+    left = nl_orgs_baseline[["full_name_in_English", "acronym_EN", "main_grouping", "ROR", "ROR_LINK"]]
+    right = orgs_ids_matching_with_links[["ROR", "OpenAIRE_ORG_ID", "OpenAIRE_ORG_LINK"]]
+
+    tmp = left.merge(right, on="ROR", how="inner")
+
+    organisations = tmp.rename(columns={
+        "full_name_in_English": "name",
+        "main_grouping": "grouping",
+    })[["name", "acronym_EN", "grouping", "OpenAIRE_ORG_LINK", "OpenAIRE_ORG_ID", "ROR_LINK"]]
     return (organisations,)
 
 
 @app.cell
 def _():
+    # Get the DataSources table
+
     datasources_baseline = pd.read_excel("https://docs.google.com/spreadsheets/d/e/2PACX-1vQwM24DIUWmqbjxaAy62w9w8gNpOMSg5sxmFro-OexCeMzIlyUJh5iVVsVxyrcLkQ/pub?output=xlsx")
     return (datasources_baseline,)
 
 
 @app.cell
 def _(datasources_baseline):
+    # Add a column with the URL to the data source, pointing to the NL research portal
+
     datasources = datasources_baseline.assign(
         OpenAIRE_DataSource_LINK="https://netherlands.openaire.eu/search/dataprovider?datasourceId=" + datasources_baseline["OpenAIRE_DataSource_ID"]
     )
