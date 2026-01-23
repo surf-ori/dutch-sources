@@ -461,7 +461,7 @@ def _(orgs_ds):
     )
 
 
-@app.cell
+@app.cell(hide_code=True)
 def _(
     akkoord_centraal_nl_beheer_dropdown,
     akkoord_centraal_nl_beheer_multiselect,
@@ -483,7 +483,8 @@ def _(
     wenselijk_dropdown,
     wenselijk_multiselect,
 ):
-    # filter data
+    # filter the data using the selected values from the dropdown widgets and multiselect widgets
+
     filtered_orgs_ds = orgs_ds
 
     if grouping_dropdown.value not in (None, "None"):
@@ -675,64 +676,6 @@ def _():
 
 
 @app.cell(hide_code=True)
-def _(filtered_orgs_ds):
-    # replace _df with your data source
-    group_donut_chart = (
-        alt.Chart(filtered_orgs_ds)
-        .mark_arc(innerRadius=70)
-        .encode(
-            color=alt.Color(field='grouping', type='nominal'),
-            theta=alt.Theta(aggregate='count', type='quantitative'),
-            tooltip=[
-                alt.Tooltip(aggregate='count'),
-                alt.Tooltip(aggregate='count'),
-                alt.Tooltip(field='grouping')
-            ]
-        )
-        .properties(
-            height=290,
-            width='container',
-            config={
-                'axis': {
-                    'grid': False
-                }
-            }
-        )
-    )
-    group_donut_chart
-    return
-
-
-@app.cell(hide_code=True)
-def _(filtered_orgs_ds):
-    # replace _df with your data source
-    type_donut_chart = (
-        alt.Chart(filtered_orgs_ds)
-        .mark_arc(innerRadius=50)
-        .encode(
-            color=alt.Color(field='Type', type='nominal'),
-            theta=alt.Theta(aggregate='count', type='quantitative'),
-            tooltip=[
-                alt.Tooltip(aggregate='count'),
-                alt.Tooltip(aggregate='count'),
-                alt.Tooltip(field='Type')
-            ]
-        )
-        .properties(
-            height=290,
-            width='container',
-            config={
-                'axis': {
-                    'grid': False
-                }
-            }
-        )
-    )
-    type_donut_chart
-    return
-
-
-@app.cell(hide_code=True)
 def _():
     mo.md(r"""
     ### Heatmap | Data Source Type vs Compatibility type
@@ -823,6 +766,80 @@ def _(filtered_orgs_ds):
     )
 
     heatmap_chart
+    return
+
+
+@app.cell
+def _():
+    mo.md(r"""
+    ### Organisation Grouping
+    This donut chart shows the distribution of datasources of organisations by their main grouping.
+    """)
+    return
+
+
+@app.cell(hide_code=True)
+def _(filtered_orgs_ds):
+    # replace _df with your data source
+    group_donut_chart = (
+        alt.Chart(filtered_orgs_ds)
+        .mark_arc(innerRadius=70)
+        .encode(
+            color=alt.Color(field='grouping', type='nominal'),
+            theta=alt.Theta(aggregate='count', type='quantitative'),
+            tooltip=[
+                alt.Tooltip(aggregate='count'),
+                alt.Tooltip(aggregate='count'),
+                alt.Tooltip(field='grouping')
+            ]
+        )
+        .properties(
+            height=290,
+            width='container',
+            config={
+                'axis': {
+                    'grid': False
+                }
+            }
+        )
+    )
+    group_donut_chart
+    return
+
+@app.cell
+def _():
+    mo.md(r"""
+    ### Type Distribution
+    This donut chart shows the distribution of datasources by their type.
+    """)
+    return
+
+@app.cell(hide_code=True)
+def _(filtered_orgs_ds):
+    # replace _df with your data source
+    type_donut_chart = (
+        alt.Chart(filtered_orgs_ds)
+        .mark_arc(innerRadius=70)
+        .encode(
+            color=alt.Color(field='Type', type='nominal'),
+            theta=alt.Theta(aggregate='count', type='quantitative'),
+            tooltip=[
+                alt.Tooltip(aggregate='count'),
+                alt.Tooltip(aggregate='count'),
+                alt.Tooltip(field='Type')
+            ]
+        )
+        .properties(
+            height=290,
+            width='container',
+            config={
+                'axis': {
+                    'grid': False
+                }
+            }
+        )
+    )
+    type_donut_chart
     return
 
 
