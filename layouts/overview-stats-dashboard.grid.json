@@ -4,7 +4,7 @@
     "columns": 24,
     "rowHeight": 20,
     "maxWidth": 1400,
-    "bordered": true,
+    "bordered": false,
     "cells": [
       {
         "position": null

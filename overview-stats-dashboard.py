@@ -25,7 +25,7 @@ import marimo
 
 __generated_with = "0.19.5"
 app = marimo.App(
-    width="columns",
+    width="full",
     app_title="Dutch CRIS / Repositories Dashboard",
     layout_file="layouts/overview-stats-dashboard.grid.json",
 )
@@ -309,7 +309,7 @@ def _(
     return (filtered_orgs_ds,)
 
 
-@app.cell(column=1)
+@app.cell
 def _():
     mo.md(r"""
     ### Cards
