@@ -60,6 +60,7 @@ def _():
     This Dashboard is part of the **PID to Portal project** from SURF and UNL.
 
     The aim is to have all Dutch Research Organisations have their data sources represented correctly in the [Netherlands Research Portal](https://netherlands.openaire.eu/).
+
     To claim your Repository / CRIS in the OpenAIRE graph visit [provide.openaire.eu](https://provide.openaire.eu)
     """)
     return
@@ -215,6 +216,8 @@ def _(orgs_ds):
     unique_wenselijk = orgs_ds["Wenselijk"].unique()
     unique_akkoord_centraal_nl_beheer = orgs_ds["akkoord centraal NL beheer"].unique()
     unique_type = orgs_ds["Type"].unique()
+    unique_openaire_compatibility = orgs_ds["openaireCompatibility"].unique()
+    unique_oai_status = orgs_ds["oai_status"].unique()
 
     # Step 2: Create dropdown widgets
     # Next, we can create dropdown widgets using mo.ui.dropdown. We'll pass the unique values as options to the dropdown.
@@ -235,6 +238,12 @@ def _(orgs_ds):
         options=["None"] + unique_type.to_list(),
         value="None",  # default value
         label=f"{mo.icon('lucide:type')} Type"
+    )
+
+    openaire_compatibility_dropdown = mo.ui.dropdown(
+        options=["None"] + unique_openaire_compatibility.to_list(),
+        value="None",  # default value
+        label=f"{mo.icon('lucide:puzzle')} Compatibility"
     )
 
     is_geregistreerd_dropdown = mo.ui.dropdown(
@@ -261,8 +270,31 @@ def _(orgs_ds):
         label=f"{mo.icon('lucide:shield')} Managed by SURF"
     )
 
+    oai_status_dropdown = mo.ui.dropdown(
+        options=["None"] + unique_oai_status.to_list(),
+        value="None",  # default value
+        label=f"{mo.icon('lucide:alert-triangle')} OAI Status"
+    )
 
-    # Step 3: Display the dropdown widgets
+    # Step 3: Create multi-select widget for OAI Endpoint support
+    # Create a multi-select widget for OAI Endpoint support
+
+    metadata_support_options = [
+        ("detected_support_nl_didl", "NL-DIDL"),
+        ("detected_support_oai_dc", "OAI-DC"),
+        ("detected_support_oai_openaire", "OAI-OpenAIRE"),
+        ("detected_support_oai_cerif_openaire", "OAI-CERIF-OpenAIRE"),
+        ("detected_support_openaire_data", "OpenAIRE-Data"),
+        ("detected_support_rioxx", "RIOXX")
+    ]
+
+    metadata_support_multiselect = mo.ui.multiselect(
+        options=[label for _, label in metadata_support_options],
+        value=[],  # default value
+        label=f"{mo.icon('lucide:link')} Metadata Supported"
+    )
+
+    # Step 4: Display the dropdown widgets
     # Finally, we can display the dropdown widgets.
 
     mo.vstack(
@@ -275,10 +307,15 @@ def _(orgs_ds):
 
             mo.md("**Data Sources:**"),
             type_dropdown, # display the widget
+            openaire_compatibility_dropdown,  # display the widget
             is_geregistreerd_dropdown,  # display the widget
             in_portal_dropdown,  # display the widget
             wenselijk_dropdown,  # display the widget
             akkoord_centraal_nl_beheer_dropdown,  # display the widget
+
+            mo.md("**OAI Endpoint:**"),
+            oai_status_dropdown,  # display the widget
+            metadata_support_multiselect  # display the widget
         ]
     )
 
@@ -291,15 +328,38 @@ def _(orgs_ds):
     # selected_in_portal = in_portal_dropdown.value
     # selected_wenselijk = wenselijk_dropdown.value
     # selected_akkoord_centraal_nl_beheer = akkoord_centraal_nl_beheer_dropdown.value
+    # selected_openaire_compatibility = openaire_compatibility_dropdown.value
+    # selected_oai_status = oai_status_dropdown.value
+    # selected_metadata_support = metadata_support_multiselect.value
+
+    # To filter the selected columns on the boolean value True, you can use the following approach:
+    # filtered_orgs_ds = orgs_ds.filter(
+    #     pl.fold(True, lambda acc, col: acc & pl.col(col), metadata_support_multiselect.value)
+    # )
     return (
         akkoord_centraal_nl_beheer_dropdown,
         grouping_dropdown,
         in_portal_dropdown,
         is_geregistreerd_dropdown,
         name_dropdown,
+        oai_status_dropdown,
+        openaire_compatibility_dropdown,
         type_dropdown,
+        unique_openaire_compatibility,
         wenselijk_dropdown,
     )
+
+
+@app.cell
+def _(orgs_ds):
+    print(orgs_ds.columns)
+    return
+
+
+@app.cell
+def _(unique_openaire_compatibility):
+    print(unique_openaire_compatibility.to_list())
+    return
 
 
 @app.cell
@@ -309,6 +369,8 @@ def _(
     in_portal_dropdown,
     is_geregistreerd_dropdown,
     name_dropdown,
+    oai_status_dropdown,
+    openaire_compatibility_dropdown,
     orgs_ds,
     type_dropdown,
     wenselijk_dropdown,
@@ -350,8 +412,31 @@ def _(
             pl.col("akkoord centraal NL beheer") == akkoord_centraal_nl_beheer_dropdown.value
         )
 
+    if openaire_compatibility_dropdown.value not in (None, "None"):
+        filtered_orgs_ds = filtered_orgs_ds.filter(
+            pl.col("openaireCompatibility") == openaire_compatibility_dropdown.value
+        )
+
+    if oai_status_dropdown.value not in (None, "None"):
+        filtered_orgs_ds = filtered_orgs_ds.filter(
+            pl.col("oai_status") == oai_status_dropdown.value
+        )
+
+
+    #   FIX THIS FILTER
+    # if metadata_support_multiselect.value:
+    #    # Map the selected labels to the actual column names
+    #    column_mapping = {label: col for col, label in metadata_support_options}
+    #    selected_columns = [column_mapping[label] for label in metadata_support_multiselect.value]
+    #    
+    #    # Ensure the selected columns are treated as boolean expressions
+    #    filtered_orgs_ds = filtered_orgs_ds.filter(
+    #        pl.fold(True, lambda acc, col: acc & pl.col(col), selected_columns).all()
+    #    )
+
     num_records = filtered_orgs_ds.height
     mo.md(f"Records in selection: {num_records}")
+
     return (filtered_orgs_ds,)
 
 
@@ -372,6 +457,10 @@ def _(filtered_orgs_ds):
     ja_is_geregistreerd = filtered_orgs_ds.filter(pl.col("is_geregistreerd") == "Ja").height
     ja_in_portal = filtered_orgs_ds.filter(pl.col("in portal") == "Ja").height
     ja_wenselijk = filtered_orgs_ds.filter(pl.col("Wenselijk") == "Ja").height
+    count_openaire_compatible = filtered_orgs_ds.filter(
+        pl.col("openaireCompatibility").str.contains("OpenAIRE|compatible", literal=False)
+    ).height
+    count_oai_status_ok = filtered_orgs_ds.filter(pl.col("oai_status") == "ok").height
 
     # Create a dictionary to hold the stats
     stats = {
@@ -379,6 +468,8 @@ def _(filtered_orgs_ds):
         "# Claimed by Research Organisation": ja_is_geregistreerd,
         "# Added to NL Research Portal": ja_in_portal,
         "# Required in NL Research Portal": ja_wenselijk,
+        "# OpenAIRE Compatible": count_openaire_compatible,
+        "# OAI Endpoint working": count_oai_status_ok
     }
 
     # Create the cards
@@ -410,6 +501,12 @@ def _():
     ### Table
     To see your organisation represented in the OpenAIRE graph, scroll to the right.
     """)
+    return
+
+
+@app.cell
+def _(filtered_orgs_ds):
+    filtered_orgs_ds
     return
 
 
@@ -500,6 +597,98 @@ def _(table_data):
         )
     )
     type_donut_chart
+    return
+
+
+@app.cell
+def _(filtered_orgs_ds):
+    # 1) Pivot for the heatmap counts (updated Polars args)
+    heatmap_data = (
+        filtered_orgs_ds
+        .pivot(
+            index="Type",
+            on="openaireCompatibility",
+            values="name",
+            aggregate_function="len",
+        )
+        .fill_null(0)
+    )
+
+    # 2) Tooltip counts per Type (from original data)
+    tooltip_counts = (
+        filtered_orgs_ds
+        .group_by("Type")
+        .agg(
+            (pl.col("is_geregistreerd") == "Ja").sum().alias("is_geregistreerd_count"),
+            (pl.col("in portal") == "Ja").sum().alias("in_portal_count"),
+            (pl.col("Wenselijk") == "Ja").sum().alias("wenselijk_count"),
+        )
+    )
+
+    # 3) Join tooltip columns onto the pivoted heatmap table
+    heatmap_data = heatmap_data.join(tooltip_counts, on="Type", how="left").fill_null(0)
+
+    # 4) Unpivot (replacement for melt)
+    meta_cols = ["Type", "is_geregistreerd_count", "in_portal_count", "wenselijk_count"]
+    compat_cols = [c for c in heatmap_data.columns if c not in meta_cols]
+
+    heatmap_long = heatmap_data.unpivot(
+        index=meta_cols,
+        on=compat_cols,
+        variable_name="openaireCompatibility",
+        value_name="Count",
+    )
+
+    # Convert to pandas for Altair (common in marimo)
+    heatmap_long_pd = heatmap_long.to_pandas()
+
+    # ---- Sorting helpers (pandas-side, simple + reliable) ----
+    # Sort Y by total count per Type
+    heatmap_long_pd["type_total"] = heatmap_long_pd.groupby("Type")["Count"].transform("sum")
+
+    # 5) Plot
+    heatmap_chart = (
+        alt.Chart(heatmap_long_pd)
+        .mark_rect()
+        .encode(
+            x=alt.X("openaireCompatibility:N", title="OpenAIRE Compatibility"),
+            y=alt.Y(
+                "Type:N",
+                title="Type",
+                sort=alt.SortField(field="type_total", order="descending"),
+            ),
+            color=alt.condition(
+                alt.datum.Count > 0,
+                alt.Color("Count:Q", title="Count", scale=alt.Scale(scheme="viridis", domainMin=1)),
+                alt.value("white"),
+            ),
+            tooltip=[
+                alt.Tooltip("Type:N", title="Type"),
+                alt.Tooltip("openaireCompatibility:N", title="OpenAIRE Compatibility"),
+                alt.Tooltip("Count:Q", title="Cell Count"),
+                alt.Tooltip("type_total:Q", title="Row Total"),
+                alt.Tooltip("is_geregistreerd_count:Q", title="is_geregistreerd=Ja"),
+                alt.Tooltip("in_portal_count:Q", title="In Portal=Ja"),
+                alt.Tooltip("wenselijk_count:Q", title="Wenselijk=Ja"),
+            ],
+        )
+        .properties(
+        title={
+            "text": "Data Sources by Type and OpenAIRE Compatibility",
+            "anchor": "start",      # left-aligned
+            "fontSize": 18,
+            "fontWeight": "bold",
+            "subtitle": "Cell color shows number of Data Sources (≥ 1)",
+            "subtitleFontSize": 13,
+        },
+        height=400,
+        width="container",
+    )
+        .configure_axis(labelFontSize=12)
+        .configure_legend(titleFontSize=14)
+    )
+
+    heatmap_chart
     return
 
 
