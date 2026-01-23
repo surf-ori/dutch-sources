@@ -132,8 +132,8 @@ def _():
 @app.cell
 def _():
     # Get the OAI-endpoint metrics from the Excel file and load it into a dataframe
-
-    datasources_oai_metrics = pd.read_excel("data/nl_orgs_openaire_datasources_with_endpoint_metrics.xlsx")
+    metrics_url = "https://raw.githubusercontent.com/surf-ori/dutch-sources/main/data/nl_orgs_openaire_datasources_with_endpoint_metrics.xlsx"
+    datasources_oai_metrics = pd.read_excel(metrics_url)
     return (datasources_oai_metrics,)
 
 
