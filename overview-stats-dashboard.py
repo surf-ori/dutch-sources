@@ -4,13 +4,20 @@
 #     "altair==6.0.0",
 #     "duckdb==1.4.3",
 #     "marimo>=0.17.0",
+#     "mcp>=1",
+#     "openai==2.15.0",
 #     "openpyxl==3.1.5",
 #     "pandas==2.3.3",
-#     "polars==1.37.1",
+#     "polars[pyarrow]==1.37.1",
 #     "pyarrow==22.0.0",
+#     "pydantic>=2",
 #     "pydantic-ai==1.43.0",
+#     "pytest==9.0.2",
 #     "pyzmq>=27.1.0",
+#     "ruff==0.14.14",
 #     "sqlglot==28.6.0",
+#     "vegafusion==2.0.3",
+#     "vl-convert-python==1.9.0.post1",
 # ]
 # ///
 
@@ -19,6 +26,7 @@ import marimo
 __generated_with = "0.19.5"
 app = marimo.App(
     width="columns",
+    app_title="Dutch CRIS / Repositories Dashboard",
     layout_file="layouts/overview-stats-dashboard.grid.json",
 )
 
