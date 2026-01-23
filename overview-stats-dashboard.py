@@ -24,13 +24,9 @@
 import marimo
 
 __generated_with = "0.19.5"
-app = marimo.App(
-    width="full",
-    app_title="Dutch CRIS / Repositories Dashboard",
-    layout_file="layouts/overview-stats-dashboard.grid.json",
-)
+app = marimo.App(width="full", app_title="Dutch CRIS / Repositories Dashboard")
 
-async with app.setup:
+async with app.setup(hide_code=True):
     # Initialization code that runs before all other cells
     import marimo as mo
     import micropip
@@ -48,33 +44,42 @@ async with app.setup:
 
 @app.cell(hide_code=True)
 def _():
-    mo.md(r"""
-    # Dutch CRIS and Repositories Dashboard
+    mo.md("""
+    <div style="
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        padding-bottom: 0.5rem;
+        border-bottom: 1px solid #e5e5e5;
+        margin-bottom: 1rem;
+    ">
+        <div>
+            <h1 style="margin: 0;">
+                Dutch CRIS and Repositories Dashboard
+            </h1>
+            <div style="color: #666; font-size: 0.9rem;">
+                Overview of organisations, data sources, and OpenAIRE compatibility
+            </div>
+        </div>
+        <img
+            src="https://www.surf.nl/themes/surf/logo.svg"
+            alt="SURF logo"
+            style="height: 48px;"
+        />
+    </div>
     """)
     return
 
 
-@app.cell
+@app.cell(hide_code=True)
 def _():
     mo.md(r"""
-    This Dashboard is part of the **PID to Portal project** from SURF and UNL.
-
-    The aim is to have all Dutch Research Organisations have their data sources represented correctly in the [Netherlands Research Portal](https://netherlands.openaire.eu/).
-
-    To claim your Repository / CRIS in the OpenAIRE graph visit [provide.openaire.eu](https://provide.openaire.eu)
+    This dashboard is part of the **PID to Portal project** from SURF and UNL. The aim is to have all Dutch Research Organisations have their data sources represented correctly in the [Netherlands Research Portal](https://netherlands.openaire.eu/). To claim your Repository / CRIS in the OpenAIRE graph visit [provide.openaire.eu](https://provide.openaire.eu)
     """)
     return
 
 
-@app.cell
-def _():
-    mo.md(r"""
-    ![SURFlogo](https://www.surf.nl/themes/surf/logo.svg)
-    """)
-    return
-
-
-@app.cell
+@app.cell(hide_code=True)
 def _():
     # Get the Curated Baseline table of Research Organisations in NL
 
@@ -82,7 +87,7 @@ def _():
     return (nl_orgs_baseline,)
 
 
-@app.cell
+@app.cell(hide_code=True)
 def _():
     # Get the table containing ROR's and OpenAIRE ORG ID's
 
@@ -90,7 +95,7 @@ def _():
     return (orgs_ids_matching,)
 
 
-@app.cell
+@app.cell(hide_code=True)
 def _(orgs_ids_matching):
     # Add a column with the URL to the Organisation, pointing to the NL research portal
 
@@ -100,7 +105,7 @@ def _(orgs_ids_matching):
     return (orgs_ids_matching_with_links,)
 
 
-@app.cell
+@app.cell(hide_code=True)
 def _(nl_orgs_baseline, orgs_ids_matching_with_links):
     # Merge the baseline table containing RORs, with the table containing ROR's and OpenAIRE ORG ID's
 
@@ -121,7 +126,7 @@ def _(nl_orgs_baseline, orgs_ids_matching_with_links):
     return (organisations,)
 
 
-@app.cell
+@app.cell(hide_code=True)
 def _():
     # Get the DataSources table
 
@@ -129,7 +134,7 @@ def _():
     return (datasources_baseline,)
 
 
-@app.cell
+@app.cell(hide_code=True)
 def _():
     # Get the OAI-endpoint metrics from the Excel file and load it into a dataframe
     metrics_url = "https://raw.githubusercontent.com/surf-ori/dutch-sources/main/data/nl_orgs_openaire_datasources_with_endpoint_metrics.xlsx"
@@ -137,7 +142,7 @@ def _():
     return (datasources_oai_metrics,)
 
 
-@app.cell
+@app.cell(hide_code=True)
 def _(datasources_baseline):
     # Add a column with the URL to the data source, pointing to the NL research portal
 
@@ -147,7 +152,7 @@ def _(datasources_baseline):
     return (datasources_url,)
 
 
-@app.cell
+@app.cell(hide_code=True)
 def _(datasources_baseline, datasources_oai_metrics, datasources_url):
     # Merge datasources_baseline with datasources_oai_metrics and datasources_url on OpenAIRE_DataSource_ID
     # Only add columns from the right tables that are not already present in datasources_baseline
@@ -180,12 +185,10 @@ def _(datasources_baseline, datasources_oai_metrics, datasources_url):
 
     # Keep only rows with unique OpenAIRE_DataSource_ID
     datasources = datasources.drop_duplicates(subset=["OpenAIRE_DataSource_ID"])
-
-    datasources
     return (datasources,)
 
 
-@app.cell
+@app.cell(hide_code=True)
 def _(datasources, organisations):
     orgs_ds = mo.sql(
         f"""
@@ -197,30 +200,23 @@ def _(datasources, organisations):
 
 
 @app.cell(hide_code=True)
-def _():
-    mo.md(r"""
-    ### Filters
-    """)
-    return
-
-
-@app.cell
 def _(orgs_ds):
-    # Step 1: Get unique values from the specified columns
+    # Step 1: Get sorted unique values from the specified columns
     # First, we need to get the unique values from the specified columns in the orgs_ds table. We can do this using the unique method provided by polars.
 
-    unique_grouping = orgs_ds["grouping"].unique()
-    unique_names = orgs_ds["name"].unique()
-    unique_is_geregistreerd = orgs_ds["is_geregistreerd"].unique()
-    unique_in_portal = orgs_ds["in portal"].unique()
-    unique_wenselijk = orgs_ds["Wenselijk"].unique()
-    unique_akkoord_centraal_nl_beheer = orgs_ds["akkoord centraal NL beheer"].unique()
-    unique_type = orgs_ds["Type"].unique()
-    unique_openaire_compatibility = orgs_ds["openaireCompatibility"].unique()
-    unique_oai_status = orgs_ds["oai_status"].unique()
+    unique_grouping = orgs_ds["grouping"].unique().sort()
+    unique_names = orgs_ds["name"].unique().sort()
+    unique_is_geregistreerd = orgs_ds["is_geregistreerd"].unique().sort()
+    unique_in_portal = orgs_ds["in portal"].unique().sort()
+    unique_wenselijk = orgs_ds["Wenselijk"].unique().sort()
+    unique_akkoord_centraal_nl_beheer = orgs_ds["akkoord centraal NL beheer"].unique().sort()
+    unique_type = orgs_ds["Type"].unique().sort()
+    unique_openaire_compatibility = orgs_ds["openaireCompatibility"].unique().sort()
+    unique_oai_status = orgs_ds["oai_status"].unique().sort()
+
 
     # Step 2: Create dropdown widgets
-    # Next, we can create dropdown widgets using mo.ui.dropdown. We'll pass the unique values as options to the dropdown.
+    ## Next, we can create dropdown widgets using mo.ui.dropdown. We'll pass the unique values as options to the dropdown.
 
     grouping_dropdown = mo.ui.dropdown(
         options=["None"] + unique_grouping.to_list(),
@@ -230,9 +226,8 @@ def _(orgs_ds):
 
     name_dropdown = mo.ui.dropdown(
         options=["None"] + unique_names.to_list(),
-        value="None",  # default value
-        label=f"{mo.icon('lucide:landmark')} Org"
-    )
+        value="None", # default value 
+        label=f"{mo.icon('lucide:landmark')} Org" )
 
     type_dropdown = mo.ui.dropdown(
         options=["None"] + unique_type.to_list(),
@@ -277,7 +272,65 @@ def _(orgs_ds):
     )
 
     # Step 3: Create multi-select widget for OAI Endpoint support
-    # Create a multi-select widget for OAI Endpoint support
+    ## We create the multiselect equivalent for the dropdown widgets.
+
+    # Step 3: Multiselect equivalents for ALL dropdown widgets
+
+    grouping_multiselect = mo.ui.multiselect(
+        options=unique_grouping.to_list(),
+        value=[],
+        label=f"{mo.icon('lucide:folder')} Group",
+    )
+
+    name_multiselect = mo.ui.multiselect(
+        options=unique_names.to_list(),
+        value=[],
+        label=f"{mo.icon('lucide:landmark')} Organisation",
+    )
+
+    type_multiselect = mo.ui.multiselect(
+        options=unique_type.to_list(),
+        value=[],
+        label=f"{mo.icon('lucide:type')} Type",
+    )
+
+    openaire_compatibility_multiselect = mo.ui.multiselect(
+        options=unique_openaire_compatibility.to_list(),
+        value=[],
+        label=f"{mo.icon('lucide:puzzle')} Compatibility",
+    )
+
+    is_geregistreerd_multiselect = mo.ui.multiselect(
+        options=unique_is_geregistreerd.to_list(),
+        value=[],
+        label=f"{mo.icon('lucide:check-square')} Claimed/Registered",
+    )
+
+    in_portal_multiselect = mo.ui.multiselect(
+        options=unique_in_portal.to_list(),
+        value=[],
+        label=f"{mo.icon('lucide:globe')} Active In Portal",
+    )
+
+    wenselijk_multiselect = mo.ui.multiselect(
+        options=unique_wenselijk.to_list(),
+        value=[],
+        label=f"{mo.icon('lucide:heart')} Required In Portal",
+    )
+
+    akkoord_centraal_nl_beheer_multiselect = mo.ui.multiselect(
+        options=unique_akkoord_centraal_nl_beheer.to_list(),
+        value=[],
+        label=f"{mo.icon('lucide:shield')} Managed by SURF",
+    )
+
+    oai_status_multiselect = mo.ui.multiselect(
+        options=unique_oai_status.to_list(),
+        value=[],
+        label=f"{mo.icon('lucide:alert-triangle')} OAI Status",
+    )
+
+    ## Create a multi-select widget for OAI Endpoint support
 
     metadata_support_options = [
         ("detected_support_nl_didl", "NL-DIDL"),
@@ -294,29 +347,79 @@ def _(orgs_ds):
         label=f"{mo.icon('lucide:link')} Metadata Supported"
     )
 
-    # Step 4: Display the dropdown widgets
-    # Finally, we can display the dropdown widgets.
+    # Step 4: Finally, we can display the dropdown widgets.
 
-    mo.vstack(
+    ## Define the filters widget (but don't render it yet)
+    filters_widget = mo.vstack(
         [
             mo.md("### Filters"),
 
-            mo.md("**Organisaties:**"),
-            grouping_dropdown, # display the widget
-            name_dropdown,  # display the widget
+            mo.md("---"),
+            mo.md("#### Organisations:"),
+            grouping_multiselect,
+            name_multiselect,
 
-            mo.md("**Data Sources:**"),
-            type_dropdown, # display the widget
-            openaire_compatibility_dropdown,  # display the widget
-            is_geregistreerd_dropdown,  # display the widget
-            in_portal_dropdown,  # display the widget
-            wenselijk_dropdown,  # display the widget
-            akkoord_centraal_nl_beheer_dropdown,  # display the widget
+            mo.md("---"),
+            mo.md("#### Data Sources:"),
+            type_multiselect,
+            openaire_compatibility_multiselect,
+            is_geregistreerd_multiselect,
+            in_portal_multiselect,
+            wenselijk_multiselect,
+            akkoord_centraal_nl_beheer_multiselect,
 
-            mo.md("**OAI Endpoint:**"),
-            oai_status_dropdown,  # display the widget
-            metadata_support_multiselect  # display the widget
-        ]
+            mo.md("---"),
+            mo.md("#### OAI Endpoint:"),
+            oai_status_multiselect,
+            metadata_support_multiselect,
+        ],
+        gap=1,
+    )
+
+
+    filters_card = mo.vstack(
+        [
+            mo.md(
+                """
+                <div style="
+                    background: #f5f5f5;
+                    padding: 12px;
+                    border-radius: 10px;
+                    border: 1px solid #e5e5e5;
+                ">
+                """
+            ),
+            filters_widget,
+            mo.md("</div>"),
+        ],
+        gap=0,
+    )
+
+    ## Make the Sidebar footer
+    sidebar_footer = mo.vstack(
+        [
+            # mo.md(f"**Records in selection:** {num_records}"),
+            mo.md(
+                """
+                <div style="margin-bottom: 8px;">
+                    <img
+                        src="https://www.surf.nl/themes/surf/logo.svg"
+                        alt="SURF logo"
+                        style="height: 50px;"
+                    />
+                </div>
+                """
+            ),
+        ],
+        gap=1,
+    )
+
+
+    ## Put the filters card and footer in the sidebar
+    mo.sidebar(
+        item=filters_card,
+        footer=mo.md("![SURF logo](https://www.surf.nl/themes/surf/logo.svg)"),
+        width="400px",             # optional
     )
 
 
@@ -338,43 +441,49 @@ def _(orgs_ds):
     # )
     return (
         akkoord_centraal_nl_beheer_dropdown,
+        akkoord_centraal_nl_beheer_multiselect,
         grouping_dropdown,
+        grouping_multiselect,
         in_portal_dropdown,
+        in_portal_multiselect,
         is_geregistreerd_dropdown,
+        is_geregistreerd_multiselect,
         name_dropdown,
+        name_multiselect,
         oai_status_dropdown,
+        oai_status_multiselect,
         openaire_compatibility_dropdown,
+        openaire_compatibility_multiselect,
         type_dropdown,
-        unique_openaire_compatibility,
+        type_multiselect,
         wenselijk_dropdown,
+        wenselijk_multiselect,
     )
-
-
-@app.cell
-def _(orgs_ds):
-    print(orgs_ds.columns)
-    return
-
-
-@app.cell
-def _(unique_openaire_compatibility):
-    print(unique_openaire_compatibility.to_list())
-    return
 
 
 @app.cell
 def _(
     akkoord_centraal_nl_beheer_dropdown,
+    akkoord_centraal_nl_beheer_multiselect,
     grouping_dropdown,
+    grouping_multiselect,
     in_portal_dropdown,
+    in_portal_multiselect,
     is_geregistreerd_dropdown,
+    is_geregistreerd_multiselect,
     name_dropdown,
+    name_multiselect,
     oai_status_dropdown,
+    oai_status_multiselect,
     openaire_compatibility_dropdown,
+    openaire_compatibility_multiselect,
     orgs_ds,
     type_dropdown,
+    type_multiselect,
     wenselijk_dropdown,
+    wenselijk_multiselect,
 ):
+    # filter data
     filtered_orgs_ds = orgs_ds
 
     if grouping_dropdown.value not in (None, "None"):
@@ -422,6 +531,54 @@ def _(
             pl.col("oai_status") == oai_status_dropdown.value
         )
 
+    # WITH MULTI-SELECT FILTERS
+
+    # --- Multi-select filters (apply only when list not empty) ---
+
+    if grouping_multiselect.value:
+        filtered_orgs_ds = filtered_orgs_ds.filter(
+            pl.col("grouping").is_in(grouping_multiselect.value)
+        )
+
+    if name_multiselect.value:
+        filtered_orgs_ds = filtered_orgs_ds.filter(
+            pl.col("name").is_in(name_multiselect.value)
+        )
+
+    if type_multiselect.value:
+        filtered_orgs_ds = filtered_orgs_ds.filter(
+            pl.col("Type").is_in(type_multiselect.value)
+        )
+
+    if is_geregistreerd_multiselect.value:
+        filtered_orgs_ds = filtered_orgs_ds.filter(
+            pl.col("is_geregistreerd").is_in(is_geregistreerd_multiselect.value)
+        )
+
+    if in_portal_multiselect.value:
+        filtered_orgs_ds = filtered_orgs_ds.filter(
+            pl.col("in portal").is_in(in_portal_multiselect.value)
+        )
+
+    if wenselijk_multiselect.value:
+        filtered_orgs_ds = filtered_orgs_ds.filter(
+            pl.col("Wenselijk").is_in(wenselijk_multiselect.value)
+        )
+
+    if akkoord_centraal_nl_beheer_multiselect.value:
+        filtered_orgs_ds = filtered_orgs_ds.filter(
+            pl.col("akkoord centraal NL beheer").is_in(akkoord_centraal_nl_beheer_multiselect.value)
+        )
+
+    if openaire_compatibility_multiselect.value:
+        filtered_orgs_ds = filtered_orgs_ds.filter(
+            pl.col("openaireCompatibility").is_in(openaire_compatibility_multiselect.value)
+        )
+
+    if oai_status_multiselect.value:
+        filtered_orgs_ds = filtered_orgs_ds.filter(
+            pl.col("oai_status").is_in(oai_status_multiselect.value)
+        )
 
     #   FIX THIS FILTER
     # if metadata_support_multiselect.value:
@@ -435,20 +592,10 @@ def _(
     #    )
 
     num_records = filtered_orgs_ds.height
-    mo.md(f"Records in selection: {num_records}")
-
     return (filtered_orgs_ds,)
 
 
-@app.cell
-def _():
-    mo.md(r"""
-    ### Cards
-    """)
-    return
-
-
-@app.cell
+@app.cell(hide_code=True)
 def _(filtered_orgs_ds):
     mo.stop(filtered_orgs_ds is None)
 
@@ -483,7 +630,7 @@ def _(filtered_orgs_ds):
     ]
 
     # Title for the section
-    _title = "### **Filtered Data Source Statistics**"
+    _title = "## **Data Source Statistics**"
 
     # Display the cards
     mo.vstack(
@@ -498,63 +645,48 @@ def _(filtered_orgs_ds):
 @app.cell
 def _():
     mo.md(r"""
-    ### Table
+    ## Table
     To see your organisation represented in the OpenAIRE graph, scroll to the right.
     """)
     return
 
 
-@app.cell
+@app.cell(hide_code=True)
 def _(filtered_orgs_ds):
-    filtered_orgs_ds
+    columns_to_hide = [
+        "OpenAIRE_ORG_ID_1",
+        "Name_1",
+        "contactpersoon (uit kvm)",
+        "contact persoon email",
+    ]
+
+    public_filtered_orgs_ds = filtered_orgs_ds.drop(columns_to_hide)
+
+    public_filtered_orgs_ds
     return
-
-
-@app.cell
-def _(filtered_orgs_ds):
-    # Select the desired columns and rename them
-    table_data = (
-        filtered_orgs_ds
-        .select([
-            pl.col("name").alias("Organisation"),
-            pl.col("grouping").alias("Group"),
-            pl.col("Name_1").alias("Data source"),
-            pl.col("Type").alias("Type"),
-            pl.col("is_geregistreerd").alias("is geregistreerd in OpenAIRE Graph"),
-            pl.col("in portal").alias("is Zichtbaar in NL Research Portal"),
-            pl.col("Wenselijk").alias("is Wenselijk in NL Research Portal"),
-            pl.col("OpenAIRE_ORG_LINK").alias("Organisation in NL Research Portal"),
-            pl.col("OpenAIRE_DataSource_LINK").alias("DataSource in NL Research Portal"),
-            pl.col("websiteUrl").alias("Website")
-        ])
-    )
-
-    # Display the table
-    mo.ui.table(table_data)
-    return (table_data,)
 
 
 @app.cell
 def _():
     mo.md(r"""
-    ### Charts
+    ## Charts
     """)
     return
 
 
-@app.cell
-def _(table_data):
+@app.cell(hide_code=True)
+def _(filtered_orgs_ds):
     # replace _df with your data source
     group_donut_chart = (
-        alt.Chart(table_data)
-        .mark_arc(innerRadius=50)
+        alt.Chart(filtered_orgs_ds)
+        .mark_arc(innerRadius=70)
         .encode(
-            color=alt.Color(field='Group', type='nominal'),
+            color=alt.Color(field='grouping', type='nominal'),
             theta=alt.Theta(aggregate='count', type='quantitative'),
             tooltip=[
                 alt.Tooltip(aggregate='count'),
                 alt.Tooltip(aggregate='count'),
-                alt.Tooltip(field='Group')
+                alt.Tooltip(field='grouping')
             ]
         )
         .properties(
@@ -571,11 +703,11 @@ def _(table_data):
     return
 
 
-@app.cell
-def _(table_data):
+@app.cell(hide_code=True)
+def _(filtered_orgs_ds):
     # replace _df with your data source
     type_donut_chart = (
-        alt.Chart(table_data)
+        alt.Chart(filtered_orgs_ds)
         .mark_arc(innerRadius=50)
         .encode(
             color=alt.Color(field='Type', type='nominal'),
@@ -600,7 +732,17 @@ def _(table_data):
     return
 
 
-@app.cell
+@app.cell(hide_code=True)
+def _():
+    mo.md(r"""
+    ### Heatmap | Data Source Type vs Compatibility type
+
+    This map shows the number of system types that are not registered yet. Or systems that are harvested in the the wrong compatibility type. Hover over the cells to see more data.
+    """)
+    return
+
+
+@app.cell(hide_code=True)
 def _(filtered_orgs_ds):
     # 1) Pivot for the heatmap counts (updated Polars args)
     heatmap_data = (
@@ -673,14 +815,6 @@ def _(filtered_orgs_ds):
             ],
         )
         .properties(
-        title={
-            "text": "Data Sources by Type and OpenAIRE Compatibility",
-            "anchor": "start",      # left-aligned
-            "fontSize": 18,
-            "fontWeight": "bold",
-            "subtitle": "Cell color shows number of Data Sources (≥ 1)",
-            "subtitleFontSize": 13,
-        },
         height=400,
         width="container",
     )
