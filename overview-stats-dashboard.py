@@ -16,7 +16,7 @@
 
 import marimo
 
-__generated_with = "0.19.4"
+__generated_with = "0.19.5"
 app = marimo.App(
     width="columns",
     layout_file="layouts/overview-stats-dashboard.grid.json",
@@ -66,18 +66,24 @@ def _():
 
 @app.cell
 def _():
+    # Get the Curated Baseline table of Research Organisations in NL
+
     nl_orgs_baseline = pd.read_excel("https://docs.google.com/spreadsheets/d/e/2PACX-1vTDQiWDIaI1SZkPTMNCovicBhA-nQND1drXoUKvrG1O_Ga3hLDRvmQZao_TvNgmNQ/pub?output=xlsx")
     return (nl_orgs_baseline,)
 
 
 @app.cell
 def _():
+    # Get the table containing ROR's and OpenAIRE ORG ID's
+
     orgs_ids_matching = pd.read_excel("https://docs.google.com/spreadsheets/d/e/2PACX-1vTSaXarmKB4RWMlpEDueeMBnwp4_BYJDUwTgBvhqCQ_-hpco9-fa7yZrAIr0T-TIA/pub?output=xlsx")
     return (orgs_ids_matching,)
 
 
 @app.cell
 def _(orgs_ids_matching):
+    # Add a column with the URL to the Organisation, pointing to the NL research portal
+
     orgs_ids_matching_with_links = orgs_ids_matching.assign(
         OpenAIRE_ORG_LINK="https://netherlands.openaire.eu/search/organization?organizationId=" + orgs_ids_matching["OpenAIRE_ORG_ID"]
     )
@@ -194,11 +200,11 @@ def _(orgs_ds):
     mo.vstack(
         [
             mo.md("### Filters"),
-        
+
             mo.md("**Organisaties:**"),
             grouping_dropdown, # display the widget
             name_dropdown,  # display the widget
-        
+
             mo.md("**Data Sources:**"),
             type_dropdown, # display the widget
             is_geregistreerd_dropdown,  # display the widget
