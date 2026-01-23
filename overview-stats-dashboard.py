@@ -3,7 +3,7 @@
 # dependencies = [
 #     "altair==6.0.0",
 #     "duckdb==1.4.3",
-#     "marimo>=0.17.0",
+#     "marimo>=0.19.0",
 #     "mcp>=1",
 #     "openai==2.15.0",
 #     "openpyxl==3.1.5",
@@ -129,12 +129,58 @@ def _():
 
 
 @app.cell
+def _():
+    # Get the OAI-endpoint metrics from the Excel file and load it into a dataframe
+
+    datasources_oai_metrics = pd.read_excel("data/nl_orgs_openaire_datasources_with_endpoint_metrics.xlsx")
+    return (datasources_oai_metrics,)
+
+
+@app.cell
 def _(datasources_baseline):
     # Add a column with the URL to the data source, pointing to the NL research portal
 
-    datasources = datasources_baseline.assign(
+    datasources_url = datasources_baseline.assign(
         OpenAIRE_DataSource_LINK="https://netherlands.openaire.eu/search/dataprovider?datasourceId=" + datasources_baseline["OpenAIRE_DataSource_ID"]
     )
+    return (datasources_url,)
+
+
+@app.cell
+def _(datasources_baseline, datasources_oai_metrics, datasources_url):
+    # Merge datasources_baseline with datasources_oai_metrics and datasources_url on OpenAIRE_DataSource_ID
+    # Only add columns from the right tables that are not already present in datasources_baseline
+
+    # Identify columns to add from datasources_oai_metrics
+    oai_metrics_cols_to_add = [
+        col for col in datasources_oai_metrics.columns
+        if col not in datasources_baseline.columns and col != "OpenAIRE_DataSource_ID"
+    ]
+
+    # Identify columns to add from datasources_url
+    url_cols_to_add = [
+        col for col in datasources_url.columns
+        if col not in datasources_baseline.columns and col != "OpenAIRE_DataSource_ID"
+    ]
+
+    # Merge with datasources_oai_metrics
+    datasources = datasources_baseline.merge(
+        datasources_oai_metrics[["OpenAIRE_DataSource_ID"] + oai_metrics_cols_to_add],
+        on="OpenAIRE_DataSource_ID",
+        how="left"
+    )
+
+    # Merge with datasources_url
+    datasources = datasources.merge(
+        datasources_url[["OpenAIRE_DataSource_ID"] + url_cols_to_add],
+        on="OpenAIRE_DataSource_ID",
+        how="left"
+    )
+
+    # Keep only rows with unique OpenAIRE_DataSource_ID
+    datasources = datasources.drop_duplicates(subset=["OpenAIRE_DataSource_ID"])
+
+    datasources
     return (datasources,)
 
 
@@ -330,8 +376,8 @@ def _(filtered_orgs_ds):
     # Create a dictionary to hold the stats
     stats = {
         "# Data Sources": total_records,
-        "# Claimed/Registered by Research Organisation": ja_is_geregistreerd,
-        "# Active in NL Research Portal": ja_in_portal,
+        "# Claimed by Research Organisation": ja_is_geregistreerd,
+        "# Added to NL Research Portal": ja_in_portal,
         "# Required in NL Research Portal": ja_wenselijk,
     }
 
