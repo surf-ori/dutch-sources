@@ -52,6 +52,7 @@ def _():
     This Dashboard is part of the **PID to Portal project** from SURF and UNL.
 
     The aim is to have all Dutch Research Organisations have their data sources represented correctly in the [Netherlands Research Portal](https://netherlands.openaire.eu/).
+    To claim your Repository / CRIS in the OpenAIRE graph visit [provide.openaire.eu](https://provide.openaire.eu)
     """)
     return
 
@@ -321,7 +322,7 @@ def _(filtered_orgs_ds):
     # Create a dictionary to hold the stats
     stats = {
         "# Data Sources": total_records,
-        "# Registered in OpenAIRE Graph": ja_is_geregistreerd,
+        "# Claimed/Registered by Research Organisation": ja_is_geregistreerd,
         "# Active in NL Research Portal": ja_in_portal,
         "# Required in NL Research Portal": ja_wenselijk,
     }
@@ -352,7 +353,8 @@ def _(filtered_orgs_ds):
 @app.cell
 def _():
     mo.md(r"""
-    ### Tables
+    ### Table
+    To see your organisation represented in the OpenAIRE graph, scroll to the right.
     """)
     return
 
