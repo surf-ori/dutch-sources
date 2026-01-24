@@ -418,7 +418,7 @@ def _(orgs_ds):
     ## Put the filters card and footer in the sidebar
     mo.sidebar(
         item=filters_card,
-        footer=mo.md("![SURF logo](https://www.surf.nl/themes/surf/logo.svg)"),
+        footer=mo.md("[SURF | Open Research Information](https://github.com/surf-ori/dutch-sources)"),
         width="400px",             # optional
     )
 
