@@ -608,7 +608,7 @@ def _(filtered_orgs_ds):
     count_openaire_compatible = filtered_orgs_ds.filter(
         pl.col("openaireCompatibility").str.contains("OpenAIRE|compatible", literal=False)
     ).height
-    count_oai_status_ok = filtered_orgs_ds.filter(pl.col("oai_status") == "ok").height
+
 
     # Create a dictionary to hold the stats
     stats = {
@@ -617,7 +617,6 @@ def _(filtered_orgs_ds):
         "# Added to NL Research Portal": ja_in_portal,
         "# Required in NL Research Portal": ja_wenselijk,
         "# OpenAIRE Compatible": count_openaire_compatible,
-        "# OAI Endpoint working": count_oai_status_ok
     }
 
     # Create the cards
@@ -643,27 +642,64 @@ def _(filtered_orgs_ds):
     return
 
 
-@app.cell
-def _():
-    mo.md(r"""
-    ## Table
-    To see your organisation represented in the OpenAIRE graph, scroll to the right.
-    """)
-    return
-
-
 @app.cell(hide_code=True)
 def _(filtered_orgs_ds):
-    columns_to_hide = [
-        "OpenAIRE_ORG_ID_1",
-        "Name_1",
-        "contactpersoon (uit kvm)",
-        "contact persoon email",
+    mo.stop(filtered_orgs_ds is None)
+
+    # --- OAI endpoint statistics (use unique variable names to avoid marimo redefinitions) ---
+    oai_count_status_ok = filtered_orgs_ds.filter(pl.col("oai_status") == "ok").height
+    oai_count_status_error = filtered_orgs_ds.filter(pl.col("oai_status") == "error").height
+
+    oai_count_support_nl_didl = filtered_orgs_ds.filter(pl.col("detected_support_nl_didl") == True).height
+    oai_count_support_oai_dc = filtered_orgs_ds.filter(pl.col("detected_support_oai_dc") == True).height
+    oai_count_support_oai_openaire = filtered_orgs_ds.filter(pl.col("detected_support_oai_openaire") == True).height
+    oai_count_support_oai_cerif_openaire = filtered_orgs_ds.filter(pl.col("detected_support_oai_cerif_openaire") == True).height
+    oai_count_support_openaire_data = filtered_orgs_ds.filter(pl.col("detected_support_openaire_data") == True).height
+
+    # admin email not blank (handles nulls + whitespace)
+    oai_count_admin_email_present = filtered_orgs_ds.filter(
+        pl.col("admin email")
+          .fill_null("")
+          .str.strip_chars()
+          .ne("")
+    ).height
+
+    oai_stats = {
+        "# OAI status = ok": oai_count_status_ok,
+        "# OAI status = error": oai_count_status_error,
+        "# Supports NL-DIDL": oai_count_support_nl_didl,
+        "# Supports OAI-DC": oai_count_support_oai_dc,
+        "# Supports OAI-OpenAIRE": oai_count_support_oai_openaire,
+        "# Supports OAI-CERIF-OpenAIRE": oai_count_support_oai_cerif_openaire,
+        "# Supports OpenAIRE-Data": oai_count_support_openaire_data,
+        "# Admin email present": oai_count_admin_email_present,
+    }
+
+    oai_cards = [
+        mo.stat(
+            label=label,
+            value=value,
+            bordered=True,
+        )
+        for label, value in oai_stats.items()
     ]
 
-    public_filtered_orgs_ds = filtered_orgs_ds.drop(columns_to_hide)
+    # build the cards layout (use 2 rows so it looks nicer with many cards)
+    oai_cards_layout = mo.vstack(
+        [
+            mo.hstack(oai_cards[:4], widths="equal", align="center"),
+            mo.hstack(oai_cards[4:], widths="equal", align="center"),
+        ],
+        gap=1,
+    )
 
-    public_filtered_orgs_ds
+    mo.accordion(
+        {
+            "OAI Endpoint Statistics": oai_cards_layout,
+        },
+        multiple=False,
+        lazy=False,  # set True if computing stats is expensive
+    )
     return
 
 
@@ -769,51 +805,6 @@ def _(filtered_orgs_ds):
     return
 
 
-@app.cell
-def _():
-    mo.md(r"""
-    ### Organisation Grouping
-    This donut chart shows the distribution of datasources of organisations by their main grouping.
-    """)
-    return
-
-
-@app.cell(hide_code=True)
-def _(filtered_orgs_ds):
-    # replace _df with your data source
-    group_donut_chart = (
-        alt.Chart(filtered_orgs_ds)
-        .mark_arc(innerRadius=70)
-        .encode(
-            color=alt.Color(field='grouping', type='nominal'),
-            theta=alt.Theta(aggregate='count', type='quantitative'),
-            tooltip=[
-                alt.Tooltip(aggregate='count'),
-                alt.Tooltip(aggregate='count'),
-                alt.Tooltip(field='grouping')
-            ]
-        )
-        .properties(
-            height=290,
-            width='container',
-            config={
-                'axis': {
-                    'grid': False
-                }
-            }
-        )
-    )
-    group_donut_chart
-    return
-
-@app.cell
-def _():
-    mo.md(r"""
-    ### Type Distribution
-    This donut chart shows the distribution of datasources by their type.
-    """)
-    return
-
 @app.cell(hide_code=True)
 def _(filtered_orgs_ds):
     # replace _df with your data source
@@ -839,7 +830,93 @@ def _(filtered_orgs_ds):
             }
         )
     )
-    type_donut_chart
+    # type_donut_chart
+    return (type_donut_chart,)
+
+
+@app.cell(hide_code=True)
+def _(filtered_orgs_ds):
+    # group_donut_chart
+    group_donut_chart = (
+        alt.Chart(filtered_orgs_ds)
+        .mark_arc(innerRadius=70)
+        .encode(
+            color=alt.Color(field='grouping', type='nominal'),
+            theta=alt.Theta(aggregate='count', type='quantitative'),
+            tooltip=[
+                alt.Tooltip(aggregate='count'),
+                alt.Tooltip(aggregate='count'),
+                alt.Tooltip(field='grouping')
+            ]
+        )
+        .properties(
+            height=290,
+            width='container',
+            config={
+                'axis': {
+                    'grid': False
+                }
+            }
+        )
+    )
+    # group_donut_chart
+    return (group_donut_chart,)
+
+
+@app.cell(hide_code=True)
+def _(group_donut_chart, type_donut_chart):
+    charts_accordion = mo.accordion(
+        {
+            "Organisation Grouping": mo.vstack(
+                [
+                    mo.md("### Organisation Grouping"),
+                    mo.md(
+                        "This donut chart shows the distribution of datasources of organisations "
+                        "by their main grouping."
+                    ),
+                    group_donut_chart,
+                ],
+                gap=1,
+            ),
+            "Type Distribution": mo.vstack(
+                [
+                    mo.md("### Type Distribution"),
+                    mo.md(
+                        "This donut chart shows the distribution of datasources by their type."
+                    ),
+                    type_donut_chart,
+                ],
+                gap=1,
+            ),
+        },
+        multiple=False,
+        lazy=False,
+    )
+    charts_accordion
+    return
+
+
+@app.cell
+def _():
+    mo.md(r"""
+    ## Table
+    To see your organisation represented in the OpenAIRE graph, scroll to the right.
+    """)
+    return
+
+
+@app.cell(hide_code=True)
+def _(filtered_orgs_ds):
+    columns_to_hide = [
+        "OpenAIRE_ORG_ID_1",
+        "Name_1",
+        "contactpersoon (uit kvm)",
+        "contact persoon email",
+    ]
+
+    public_filtered_orgs_ds = filtered_orgs_ds.drop(columns_to_hide)
+
+    public_filtered_orgs_ds
     return
 
 
