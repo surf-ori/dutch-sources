@@ -23,7 +23,7 @@
 
 import marimo
 
-__generated_with = "0.19.5"
+__generated_with = "0.19.6"
 app = marimo.App(width="full", app_title="Dutch CRIS / Repositories Dashboard")
 
 async with app.setup(hide_code=True):
@@ -74,7 +74,7 @@ def _():
 @app.cell(hide_code=True)
 def _():
     mo.md(r"""
-    This dashboard is part of the **PID to Portal project** from SURF and UNL. The aim is to have all Dutch Research Organisations have their data sources represented correctly in the [Netherlands Research Portal](https://netherlands.openaire.eu/). To claim your Repository / CRIS in the OpenAIRE graph visit [provide.openaire.eu](https://provide.openaire.eu)
+    This dashboard is part of the [**PID to Portal project**](https://communities.surf.nl/en/open-research-information/article/from-pid-to-portal-strengthening-the-open-research-information) from SURF and UNL. The aim is to have all Dutch Research Organisations have their data sources represented correctly in the [Netherlands Research Portal](https://netherlands.openaire.eu/). To claim your Repository / CRIS in the OpenAIRE graph visit [provide.openaire.eu](https://provide.openaire.eu)
     """)
     return
 
