@@ -1,0 +1,23 @@
+{
+  "@context": {
+    "@vocab": "https://example.org/sdg-taxonomy/",
+    "sdg": "https://example.org/sdg-taxonomy/",
+    "schema": "http://schema.org/",
+    "skos": "http://www.w3.org/2004/02/skos/core#",
+    "rdfs": "http://www.w3.org/2000/01/rdf-schema#",
+    "type": "@type",
+    "label": "rdfs:label",
+    "prefLabel": "skos:prefLabel",
+    "hasTarget": {
+      "@id": "sdg:hasTarget",
+      "@type": "@id"
+    },
+    "hasIndicator": {
+      "@id": "sdg:hasIndicator",
+      "@type": "@id"
+    },
+    "source": "schema:isBasedOn",
+    "indicatorCode": "sdg:indicatorCode"
+  },
+  "@graph": []
+}
