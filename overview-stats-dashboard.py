@@ -23,7 +23,7 @@
 
 import marimo
 
-__generated_with = "0.19.6"
+__generated_with = "0.20.2"
 app = marimo.App(width="full", app_title="Dutch CRIS / Repositories Dashboard")
 
 async with app.setup(hide_code=True):
