@@ -603,6 +603,47 @@ def _(
 def _(filtered_orgs_ds):
     mo.stop(filtered_orgs_ds is None)
 
+    # --- Organisation statistics ---
+    unique_orgs_total = filtered_orgs_ds.select(pl.col("name").n_unique()).to_series()[0]
+
+    orgs_per_group = (
+        filtered_orgs_ds
+        .group_by("grouping")
+        .agg(pl.col("name").n_unique().alias("unique_orgs"))
+        .sort("grouping")
+    )
+
+    org_cards = [
+        mo.stat(label=f"{group}", value=count, bordered=True)
+        for group, count in zip(orgs_per_group["grouping"], orgs_per_group["unique_orgs"])
+    ]
+
+    org_cards_layout = mo.vstack(
+        [
+            mo.hstack(
+                [
+                    mo.stat(label="Total unique organisations", value=unique_orgs_total, bordered=True),
+                ],
+                widths="equal",
+                align="center",
+            ),
+            mo.hstack(org_cards, widths="equal", align="center"),
+        ],
+        gap=1,
+    )
+
+    mo.accordion(
+        {"Organisation Statistics": org_cards_layout},
+        multiple=False,
+        lazy=False,
+    )
+    return
+
+
+@app.cell(hide_code=True)
+def _(filtered_orgs_ds):
+    mo.stop(filtered_orgs_ds is None)
+
     # Calculate the required statistics
     total_records = filtered_orgs_ds.height
     ja_is_geregistreerd = filtered_orgs_ds.filter(pl.col("is_geregistreerd") == "Ja").height
