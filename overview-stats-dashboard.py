@@ -653,24 +653,58 @@ def _(filtered_orgs_ds):
         pl.col("openaireCompatibility").str.contains("OpenAIRE|compatible", literal=False)
     ).height
 
+    # inverse stats
+    not_is_geregistreerd = total_records - ja_is_geregistreerd
+    not_in_portal = total_records - ja_in_portal
+    not_wenselijk = total_records - ja_wenselijk
+    not_openaire_compatible = total_records - count_openaire_compatible
+
 
     # Create a dictionary to hold the stats
-    stats = {
+    ds_totals = {
         "# Data Sources": total_records,
+    }
+
+    ds_stats = {
         "# Claimed by Research Organisation": ja_is_geregistreerd,
         "# Added to NL Research Portal": ja_in_portal,
         "# Required in NL Research Portal": ja_wenselijk,
         "# OpenAIRE Compatible": count_openaire_compatible,
     }
 
+    ds_not_stats = {
+        "# NOT Claimed by Research Organisation": not_is_geregistreerd,
+        "# NOT Added to NL Research Portal": not_in_portal,
+        "# NOT Required in NL Research Portal": not_wenselijk,
+        "# NOT OpenAIRE Compatible": not_openaire_compatible,
+    }
+
     # Create the cards
-    _cards = [
+    ds_totals = [
         mo.stat(
             label=label.replace("_", " "),
             value=value,
             bordered=True,
         )
-        for label, value in stats.items()
+        for label, value in ds_totals.items()
+    ]
+
+    ds_cards = [
+        mo.stat(
+            label=label.replace("_", " "),
+            value=value,
+            bordered=True,
+        )
+        for label, value in ds_stats.items()
+    ]
+
+    ds_not_cards = [
+        mo.stat(
+            label=label.replace("_", " "),
+            value=value,
+            bordered=True,
+        )
+        for label, value in ds_not_stats.items()
     ]
 
     # Title for the section
@@ -680,7 +714,9 @@ def _(filtered_orgs_ds):
     mo.vstack(
         [
             mo.md(_title),
-            mo.hstack(_cards, widths="equal", align="center"),
+            mo.hstack(ds_totals, widths="equal", align="center"),
+            mo.hstack(ds_cards, widths="equal", align="center"),
+            mo.hstack(ds_not_cards, widths="equal", align="center"),
         ]
     )
     return
