@@ -74,8 +74,8 @@ def _():
 @app.cell(hide_code=True)
 def _():
     mo.md(r"""
-    This dashboard is part of the [**PID to Portal project**](https://communities.surf.nl/en/open-research-information/article/from-pid-to-portal-strengthening-the-open-research-information) from SURF and UNL. 
-          The aim is to have all Dutch Research Organisations have their data sources represented correctly in the [Netherlands Research Portal](https://netherlands.openaire.eu/). 
+    This dashboard is part of the [**PID to Portal project**](https://communities.surf.nl/en/open-research-information/article/from-pid-to-portal-strengthening-the-open-research-information) from SURF and UNL.
+          The aim is to have all Dutch Research Organisations have their data sources represented correctly in the [Netherlands Research Portal](https://netherlands.openaire.eu/).
           To claim your Repository / CRIS in the OpenAIRE graph visit [provide.openaire.eu](https://provide.openaire.eu)
           The code for this dashboard is open source and available on [GitHub](https://github.com/surf-ori/dutch-sources).
     """)
@@ -912,14 +912,46 @@ def _():
 def _(filtered_orgs_ds):
     columns_to_hide = [
         "OpenAIRE_ORG_ID_1",
-        "Name_1",
+        "OpenAIRE_ORG_ID",
+        "OpenAIRE_DataSource_ID",
         "contactpersoon (uit kvm)",
         "contact persoon email",
     ]
 
-    public_filtered_orgs_ds = filtered_orgs_ds.drop(columns_to_hide)
+    # Rename columns in-place so the originals disappear
+    renamed_orgs_ds = filtered_orgs_ds.rename(
+        {
+            "name": "Organisation",
+            "Name_1": "DataSource",
+        }
+    )
 
-    public_filtered_orgs_ds
+    # Reorder columns
+    column_order = list(renamed_orgs_ds.columns)
+
+    # ensure link is positioned between websiteUrl and admin email without moving the originals
+    for col_to_drop in ["OpenAIRE_DataSource_LINK"]:
+        if col_to_drop in column_order:
+            column_order.remove(col_to_drop)
+
+    def insert_after(target, new_col):
+        if target in column_order:
+            idx = column_order.index(target) + 1
+            column_order.insert(idx, new_col)
+            return True
+        return False
+
+    inserted = insert_after("websiteUrl", "OpenAIRE_DataSource_LINK")
+    if not inserted and "admin email" in column_order:
+        # fallback: place just before admin email
+        column_order.insert(column_order.index("admin email"), "OpenAIRE_DataSource_LINK")
+    elif not inserted:
+        # final fallback: append
+        column_order.append("OpenAIRE_DataSource_LINK")
+
+    public_orgs_ds = renamed_orgs_ds.select(column_order).drop(columns_to_hide)
+
+    public_orgs_ds
     return
 
 
